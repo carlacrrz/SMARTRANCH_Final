@@ -1,0 +1,50 @@
+# ========================
+# Smart Ranch — .gitignore
+# ========================
+
+# --- Environment & Secrets ---
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+venv/
+.venv/
+
+# --- Flutter / Dart ---
+app/smart_ranch/build/
+app/smart_ranch/.dart_tool/
+app/smart_ranch/.packages
+app/smart_ranch/.flutter-plugins
+app/smart_ranch/.flutter-plugins-dependencies
+
+# --- PlatformIO / Firmware ---
+firmware/.pio/
+firmware/.pioenvs/
+firmware/.piolibdeps/
+
+# --- IDE ---
+.idea/
+.vscode/
+*.iml
+*.swp
+*.swo
+*~
+
+# --- Docker volumes ---
+mosquitto_data/
+mosquitto_log/
+influxdb_data/
+
+# --- OS ---
+.DS_Store
+Thumbs.db
+desktop.ini

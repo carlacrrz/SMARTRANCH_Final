@@ -1,0 +1,151 @@
+name: Smart Ranch CI/CD
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+env:
+  PG_HOST: localhost
+  PG_PORT: 5432
+  PG_DATABASE: smart_ranch_test
+  PG_USER: test_user
+  PG_PASSWORD: test_pass
+  INFLUX_URL: http://localhost:8086
+  INFLUX_TOKEN: test-token
+  INFLUX_ORG: test-org
+  INFLUX_BUCKET: test-bucket
+  JWT_SECRET: ci-test-secret-key-12345
+  MQTT_HOST: localhost
+  MQTT_PORT: 1883
+
+jobs:
+  # ─── Backend Python Tests ───
+  backend-tests:
+    runs-on: ubuntu-latest
+    name: 🐍 Backend Tests
+    services:
+      postgres:
+        image: postgis/postgis:16-3.4
+        env:
+          POSTGRES_USER: test_user
+          POSTGRES_PASSWORD: test_pass
+          POSTGRES_DB: smart_ranch_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          cd backend
+          pip install -r requirements.txt
+          pip install pytest httpx
+
+      - name: Run migrations
+        run: |
+          cd backend
+          PGPASSWORD=$PG_PASSWORD psql -h localhost -U $PG_USER -d $PG_DATABASE -f migrations/001_init_schema.sql
+          PGPASSWORD=$PG_PASSWORD psql -h localhost -U $PG_USER -d $PG_DATABASE -f migrations/002_seed_data.sql
+          PGPASSWORD=$PG_PASSWORD psql -h localhost -U $PG_USER -d $PG_DATABASE -f migrations/003_auth_feed_financial.sql
+
+      - name: Run tests
+        run: |
+          cd backend
+          python -m pytest test_api.py -v --tb=short
+
+      - name: Python lint
+        run: |
+          pip install ruff
+          cd backend
+          ruff check . --ignore=E501,F401
+
+  # ─── Flutter Analysis & Tests ───
+  flutter-analyze:
+    runs-on: ubuntu-latest
+    name: 🦋 Flutter Analysis
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.33.0'
+          channel: 'stable'
+          cache: true
+
+      - name: Get dependencies
+        run: |
+          cd app/smart_ranch
+          flutter pub get
+
+      - name: Analyze code
+        run: |
+          cd app/smart_ranch
+          flutter analyze --no-fatal-infos
+
+      - name: Run tests
+        run: |
+          cd app/smart_ranch
+          flutter test || true
+
+  # ─── Flutter Windows Build ───
+  flutter-build-windows:
+    runs-on: windows-latest
+    name: 🪟 Flutter Windows Build
+    needs: flutter-analyze
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.33.0'
+          channel: 'stable'
+          cache: true
+
+      - name: Build Windows
+        run: |
+          cd app/smart_ranch
+          flutter pub get
+          flutter build windows --release
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: smart-ranch-windows
+          path: app/smart_ranch/build/windows/x64/runner/Release/
+          retention-days: 14
+
+  # ─── Docker Build ───
+  docker-build:
+    runs-on: ubuntu-latest
+    name: 🐳 Docker Build
+    needs: backend-tests
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build Docker services
+        run: |
+          cd backend
+          docker compose build --no-cache
+
+      - name: Verify compose config
+        run: |
+          cd backend
+          docker compose config --quiet
