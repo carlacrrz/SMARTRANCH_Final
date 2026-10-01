@@ -66,8 +66,8 @@ class _AlertsScreenState extends State<AlertsScreen> {
       children: [
         // Header strip
         Container(
-          margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-          padding: const EdgeInsets.all(12),
+          margin: EdgeInsets.fromLTRB(16, 12, 16, 0),
+          padding: EdgeInsets.all(12),
           decoration: BoxDecoration(
             color: AppTheme.card,
             borderRadius: BorderRadius.circular(10),
@@ -89,10 +89,10 @@ class _AlertsScreenState extends State<AlertsScreen> {
                       unackCount > 0
                           ? '$unackCount alerta${unackCount == 1 ? '' : 's'} sin atender'
                           : 'Sin alertas pendientes',
-                      style: const TextStyle(color: AppTheme.textPrimary, fontWeight: FontWeight.w600, fontSize: 14),
+                      style: TextStyle(color: AppTheme.textPrimary, fontWeight: FontWeight.w600, fontSize: 14),
                     ),
                     Text('Total: ${_alerts.length} alertas',
-                        style: const TextStyle(color: AppTheme.textSecondary, fontSize: 11)),
+                        style: TextStyle(color: AppTheme.textSecondary, fontSize: 11)),
                   ],
                 ),
               ),
@@ -100,7 +100,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
                 avatar: Icon(Icons.filter_list_rounded, size: 14,
                     color: _showOnlyUnacknowledged ? AppTheme.primary : AppTheme.textSecondary),
                 label: Text(_showOnlyUnacknowledged ? 'Pendientes' : 'Todas',
-                    style: const TextStyle(fontSize: 11)),
+                    style: TextStyle(fontSize: 11)),
                 selected: _showOnlyUnacknowledged,
                 selectedColor: AppTheme.primary.withAlpha(30),
                 backgroundColor: AppTheme.surface,
@@ -116,7 +116,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
         // 2-column layout
         Expanded(
           child: _isLoading
-              ? const Center(child: CircularProgressIndicator(color: AppTheme.primary))
+              ? Center(child: CircularProgressIndicator(color: AppTheme.primary))
               : _alerts.isEmpty
                   ? Center(
                       child: Column(
@@ -124,8 +124,8 @@ class _AlertsScreenState extends State<AlertsScreen> {
                         children: [
                           Icon(Icons.check_circle_outline_rounded, size: 48,
                               color: AppTheme.primary.withAlpha(80)),
-                          const SizedBox(height: 12),
-                          const Text('Todo en orden', style: TextStyle(color: AppTheme.textSecondary, fontSize: 14)),
+                          SizedBox(height: 12),
+                          Text('Todo en orden', style: TextStyle(color: AppTheme.textSecondary, fontSize: 14)),
                         ],
                       ),
                     )
@@ -153,7 +153,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
 
   Widget _buildAlertList(String title, List<AlertLog> alerts, IconData icon, Color titleColor) {
     return Container(
-      margin: const EdgeInsets.all(8),
+      margin: EdgeInsets.all(8),
       decoration: BoxDecoration(
         color: AppTheme.card,
         borderRadius: BorderRadius.circular(10),
@@ -181,7 +181,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
               ],
             ),
           ),
-          const Divider(height: 1, color: AppTheme.divider),
+          Divider(height: 1, color: AppTheme.divider),
           Expanded(
             child: alerts.isEmpty
                 ? Center(child: Text('Sin alertas', style: TextStyle(fontSize: 12, color: AppTheme.textSecondary)))
@@ -224,8 +224,8 @@ class _AlertsScreenState extends State<AlertsScreen> {
     };
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 6),
-      padding: const EdgeInsets.all(10),
+      margin: EdgeInsets.only(bottom: 6),
+      padding: EdgeInsets.all(10),
       decoration: BoxDecoration(
         color: alert.acknowledged ? AppTheme.surface : color.withAlpha(8),
         borderRadius: BorderRadius.circular(8),
@@ -256,12 +256,12 @@ class _AlertsScreenState extends State<AlertsScreen> {
                       child: Text(_alertTypeLabel(alert.alertType),
                           style: TextStyle(color: color, fontSize: 9, fontWeight: FontWeight.w600)),
                     ),
-                    const Spacer(),
+                    Spacer(),
                     Text(_formatTimeAgo(alert.createdAt),
-                        style: const TextStyle(color: AppTheme.textSecondary, fontSize: 9)),
+                        style: TextStyle(color: AppTheme.textSecondary, fontSize: 9)),
                   ],
                 ),
-                const SizedBox(height: 4),
+                SizedBox(height: 4),
                 Text(alert.message ?? alert.alertType,
                     style: TextStyle(
                       color: alert.acknowledged ? AppTheme.textSecondary : AppTheme.textPrimary,
@@ -269,23 +269,23 @@ class _AlertsScreenState extends State<AlertsScreen> {
                     ),
                     maxLines: 2, overflow: TextOverflow.ellipsis),
                 if (alert.acknowledged) ...[
-                  const SizedBox(height: 3),
+                  SizedBox(height: 3),
                   Row(
                     children: [
-                      const Icon(Icons.check_circle_rounded, size: 10, color: AppTheme.primary),
-                      const SizedBox(width: 3),
+                      Icon(Icons.check_circle_rounded, size: 10, color: AppTheme.primary),
+                      SizedBox(width: 3),
                       Text('Atendida por ${alert.acknowledgedBy ?? 'sistema'}',
-                          style: const TextStyle(color: AppTheme.textSecondary, fontSize: 9)),
+                          style: TextStyle(color: AppTheme.textSecondary, fontSize: 9)),
                     ],
                   ),
                 ],
                 if (!alert.acknowledged && alert.deviceId != null) ...[
-                  const SizedBox(height: 3),
+                  SizedBox(height: 3),
                   Row(
                     children: [
                       Icon(typeIcon, size: 10, color: AppTheme.textSecondary),
-                      const SizedBox(width: 3),
-                      Text(alert.deviceId!, style: const TextStyle(color: AppTheme.textSecondary, fontSize: 9)),
+                      SizedBox(width: 3),
+                      Text(alert.deviceId!, style: TextStyle(color: AppTheme.textSecondary, fontSize: 9)),
                     ],
                   ),
                 ],

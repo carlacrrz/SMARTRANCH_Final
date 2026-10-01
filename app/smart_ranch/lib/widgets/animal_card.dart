@@ -39,7 +39,7 @@ class _AnimalCardState extends State<AnimalCard> {
       child: GestureDetector(
         onTap: widget.onTap,
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
+          duration: Duration(milliseconds: 200),
           decoration: BoxDecoration(
             color: _hovered ? AppTheme.cardBright : AppTheme.card,
             borderRadius: BorderRadius.circular(12),
@@ -92,7 +92,7 @@ class _AnimalCardState extends State<AnimalCard> {
                             reading.animalName.isNotEmpty
                                 ? reading.animalName
                                 : reading.deviceId,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w700,
                               color: AppTheme.textPrimary,
@@ -101,7 +101,7 @@ class _AnimalCardState extends State<AnimalCard> {
                           ),
                           Text(
                             reading.deviceId,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 11,
                               color: AppTheme.textSecondary,
                               fontFamily: 'monospace',
@@ -154,9 +154,11 @@ class _AnimalCardState extends State<AnimalCard> {
                 ),
                 const SizedBox(height: 10),
 
-                // Stats grid — 2x2 for desktop density
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                // Stats grid — Wrap prevents overflow
+                Wrap(
+                  alignment: WrapAlignment.spaceAround,
+                  spacing: 4,
+                  runSpacing: 8,
                   children: [
                     _StatChip(
                       icon: Icons.thermostat_rounded,
@@ -243,7 +245,7 @@ class _StatusBadge extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(AppTheme.thiIcon(level), size: 12, color: color),
-          const SizedBox(width: 4),
+          SizedBox(width: 4),
           Text(
             AppTheme.thiLabel(level),
             style: TextStyle(
@@ -279,7 +281,7 @@ class _StatChip extends StatelessWidget {
         const SizedBox(height: 2),
         Text(
           label,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w600,
             color: AppTheme.textPrimary,
@@ -287,7 +289,7 @@ class _StatChip extends StatelessWidget {
         ),
         Text(
           sublabel,
-          style: const TextStyle(fontSize: 9, color: AppTheme.textSecondary),
+          style: TextStyle(fontSize: 9, color: AppTheme.textSecondary),
         ),
       ],
     );

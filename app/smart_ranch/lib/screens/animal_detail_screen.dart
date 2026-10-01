@@ -85,7 +85,7 @@ class _AnimalDetailScreenState extends State<AnimalDetailScreen> {
                   size: 16,
                   color: color,
                 ),
-                const SizedBox(width: 4),
+                SizedBox(width: 4),
                 Text(
                   AppTheme.thiLabel(reading.thiLevel),
                   style: TextStyle(
@@ -101,17 +101,15 @@ class _AnimalDetailScreenState extends State<AnimalDetailScreen> {
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Left Column: Gauges + Readings + Chart
-            Expanded(
-              flex: 3,
-              child: Column(
-                children: [
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final isMobile = constraints.maxWidth < 900;
+            
+            final leftColumn = Column(
+              children: [
             // --- THI Gauge + Current Values ---
             Container(
-              padding: const EdgeInsets.all(24),
+              padding: EdgeInsets.all(24),
               decoration: BoxDecoration(
                 color: AppTheme.card,
                 borderRadius: BorderRadius.circular(20),
@@ -184,7 +182,7 @@ class _AnimalDetailScreenState extends State<AnimalDetailScreen> {
             if (history.length > 2)
               Container(
                 height: 220,
-                padding: const EdgeInsets.all(16),
+                padding: EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: AppTheme.card,
                   borderRadius: BorderRadius.circular(12),
@@ -207,7 +205,7 @@ class _AnimalDetailScreenState extends State<AnimalDetailScreen> {
 
             // --- Accelerometer Card ---
             Container(
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: AppTheme.card,
                 borderRadius: BorderRadius.circular(12),
@@ -244,60 +242,69 @@ class _AnimalDetailScreenState extends State<AnimalDetailScreen> {
               ),
             ),
                 ],
-              ),
-            ),
+              );
+              
+            final rightColumn = Column(
+              children: [
+                _HealthStatusCard(reading: reading),
+                const SizedBox(height: 16),
+                _ReproductionCard(
+                  reading: reading,
+                  hasEstrusAlert: widget.demoService.activeEstrusAlerts
+                      .containsKey(widget.deviceId),
+                ),
+                const SizedBox(height: 16),
+                Container(
+                  padding: EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: AppTheme.card,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: AppTheme.divider),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Información del Dispositivo',
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                      const SizedBox(height: 8),
+                      _InfoRow(label: 'ID', value: reading.deviceId),
+                      _InfoRow(
+                        label: 'Nombre',
+                        value: reading.animalName.isNotEmpty
+                            ? reading.animalName
+                            : 'No asignado',
+                      ),
+                      _InfoRow(
+                        label: 'Última lectura',
+                        value: _formatTime(reading.timestamp),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            );
 
-            const SizedBox(width: 16),
-
-            // Right Column: Health + Reproduction + Device
-            Expanded(
-              flex: 2,
-              child: Column(
+            if (isMobile) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-            // --- Health Status Card ---
-            _HealthStatusCard(reading: reading),
-            const SizedBox(height: 16),
-
-            // --- Reproduction Activity Card ---
-            _ReproductionCard(
-              reading: reading,
-              hasEstrusAlert: widget.demoService.activeEstrusAlerts
-                  .containsKey(widget.deviceId),
-            ),
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: AppTheme.card,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: AppTheme.divider),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Información del Dispositivo',
-                    style: Theme.of(context).textTheme.titleLarge,
-                  ),
-                  const SizedBox(height: 8),
-                  _InfoRow(label: 'ID', value: reading.deviceId),
-                  _InfoRow(
-                    label: 'Nombre',
-                    value: reading.animalName.isNotEmpty
-                        ? reading.animalName
-                        : 'No asignado',
-                  ),
-                  _InfoRow(
-                    label: 'Última lectura',
-                    value: _formatTime(reading.timestamp),
-                  ),
+                  leftColumn,
+                  const SizedBox(height: 16),
+                  rightColumn,
                 ],
-              ),
-            ),
-                ],
-              ),
-            ),
-          ],
+              );
+            }
+            return Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(flex: 3, child: leftColumn),
+                const SizedBox(width: 16),
+                Expanded(flex: 2, child: rightColumn),
+              ],
+            );
+          },
         ),
       ),
     );
@@ -332,7 +339,7 @@ class _AnimalDetailScreenState extends State<AnimalDetailScreen> {
               reservedSize: 35,
               getTitlesWidget: (value, meta) => Text(
                 value.toInt().toString(),
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 10,
                   color: AppTheme.textSecondary,
                 ),
@@ -417,7 +424,7 @@ class _ReadingTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: AppTheme.card,
         borderRadius: BorderRadius.circular(12),
@@ -430,7 +437,7 @@ class _ReadingTile extends StatelessWidget {
           Row(
             children: [
               Icon(icon, size: 16, color: color),
-              const SizedBox(width: 6),
+              SizedBox(width: 6),
               Text(
                 label,
                 style: TextStyle(fontSize: 11, color: AppTheme.textSecondary),
@@ -566,7 +573,7 @@ class _HealthStatusCard extends StatelessWidget {
     }
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppTheme.card,
         borderRadius: BorderRadius.circular(16),
@@ -639,19 +646,19 @@ class _ReproductionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final score = reading.estrusScore;
     final Color barColor = hasEstrusAlert
-        ? const Color(0xFFE91E63)
+        ? Color(0xFFE91E63)
         : score > 0.5
-            ? const Color(0xFFFF9800)
+            ? Color(0xFFFF9800)
             : AppTheme.textSecondary;
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppTheme.card,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: hasEstrusAlert
-              ? const Color(0xFFE91E63).withAlpha(100)
+              ? Color(0xFFE91E63).withAlpha(100)
               : AppTheme.divider,
           width: hasEstrusAlert ? 1.5 : 1,
         ),
@@ -669,7 +676,7 @@ class _ReproductionCard extends StatelessWidget {
                 hasEstrusAlert ? Icons.favorite_rounded : Icons.biotech_rounded,
                 size: 18,
                 color: hasEstrusAlert
-                    ? const Color(0xFFE91E63)
+                    ? Color(0xFFE91E63)
                     : AppTheme.textSecondary,
               ),
               const SizedBox(width: 8),

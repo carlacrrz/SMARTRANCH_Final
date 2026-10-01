@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../config/app_theme.dart';
+import '../models/ranch_models.dart';
 import '../services/ranch_api_service.dart';
+import 'nfc_scanner_dialog.dart';
 
 /// Reusable CRUD dialog forms for ranch operations.
 /// Each form submits to the PostgreSQL API and returns the result.
@@ -11,15 +13,15 @@ import '../services/ranch_api_service.dart';
 
 InputDecoration _inputDecoration(String label, {IconData? icon}) => InputDecoration(
   labelText: label,
-  labelStyle: const TextStyle(color: AppTheme.textSecondary, fontSize: 13),
+  labelStyle: TextStyle(color: AppTheme.textSecondary, fontSize: 13),
   prefixIcon: icon != null ? Icon(icon, color: AppTheme.textSecondary, size: 18) : null,
   enabledBorder: OutlineInputBorder(
     borderRadius: BorderRadius.circular(8),
-    borderSide: const BorderSide(color: AppTheme.divider),
+    borderSide: BorderSide(color: AppTheme.divider),
   ),
   focusedBorder: OutlineInputBorder(
     borderRadius: BorderRadius.circular(8),
-    borderSide: const BorderSide(color: AppTheme.primary, width: 1.5),
+    borderSide: BorderSide(color: AppTheme.primary, width: 1.5),
   ),
   filled: true,
   fillColor: AppTheme.surface,
@@ -28,8 +30,8 @@ InputDecoration _inputDecoration(String label, {IconData? icon}) => InputDecorat
 );
 
 Widget _sectionTitle(String text) => Padding(
-  padding: const EdgeInsets.only(bottom: 6, top: 4),
-  child: Text(text, style: const TextStyle(
+  padding: EdgeInsets.only(bottom: 6, top: 4),
+  child: Text(text, style: TextStyle(
       color: AppTheme.primary, fontWeight: FontWeight.w600, fontSize: 12)),
 );
 
@@ -44,6 +46,7 @@ Future<bool> showAddAnimalDialog(BuildContext context) async {
   final breedCtrl = TextEditingController(text: 'Brangus');
   final weightCtrl = TextEditingController();
   final notesCtrl = TextEditingController();
+  final deviceIdCtrl = TextEditingController();
   String sex = 'female';
   String category = 'vaca';
   String status = 'active';
@@ -65,27 +68,27 @@ Future<bool> showAddAnimalDialog(BuildContext context) async {
               children: [
                 Row(
                   children: [
-                    const Icon(Icons.add_circle_outline, color: AppTheme.primary, size: 22),
-                    const SizedBox(width: 8),
-                    const Text('Registrar Animal', style: TextStyle(
+                    Icon(Icons.add_circle_outline, color: AppTheme.primary, size: 22),
+                    SizedBox(width: 8),
+                    Text('Registrar Animal', style: TextStyle(
                         color: AppTheme.textPrimary, fontWeight: FontWeight.w700, fontSize: 18)),
-                    const Spacer(),
+                    Spacer(),
                     IconButton(
-                      icon: const Icon(Icons.close, color: AppTheme.textSecondary, size: 20),
+                      icon: Icon(Icons.close, color: AppTheme.textSecondary, size: 20),
                       onPressed: () => Navigator.pop(ctx, false),
                     ),
                   ],
                 ),
-                const SizedBox(height: 16),
+                SizedBox(height: 16),
 
                 _sectionTitle('IDENTIFICACIÓN'),
-                TextField(controller: nameCtrl, style: const TextStyle(color: AppTheme.textPrimary, fontSize: 13),
+                TextField(controller: nameCtrl, style: TextStyle(color: AppTheme.textPrimary, fontSize: 13),
                     decoration: _inputDecoration('Nombre', icon: Icons.pets)),
-                const SizedBox(height: 10),
-                TextField(controller: earTagCtrl, style: const TextStyle(color: AppTheme.textPrimary, fontSize: 13),
+                SizedBox(height: 10),
+                TextField(controller: earTagCtrl, style: TextStyle(color: AppTheme.textPrimary, fontSize: 13),
                     decoration: _inputDecoration('Arete SINIIGA', icon: Icons.tag)),
-                const SizedBox(height: 10),
-                TextField(controller: breedCtrl, style: const TextStyle(color: AppTheme.textPrimary, fontSize: 13),
+                SizedBox(height: 10),
+                TextField(controller: breedCtrl, style: TextStyle(color: AppTheme.textPrimary, fontSize: 13),
                     decoration: _inputDecoration('Raza', icon: Icons.category)),
 
                 const SizedBox(height: 14),
@@ -96,7 +99,7 @@ Future<bool> showAddAnimalDialog(BuildContext context) async {
                       child: DropdownButtonFormField<String>(
                         initialValue: sex,
                         dropdownColor: AppTheme.card,
-                        style: const TextStyle(color: AppTheme.textPrimary, fontSize: 13),
+                        style: TextStyle(color: AppTheme.textPrimary, fontSize: 13),
                         decoration: _inputDecoration('Sexo'),
                         items: const [
                           DropdownMenuItem(value: 'female', child: Text('Hembra')),
@@ -110,7 +113,7 @@ Future<bool> showAddAnimalDialog(BuildContext context) async {
                       child: DropdownButtonFormField<String>(
                         initialValue: category,
                         dropdownColor: AppTheme.card,
-                        style: const TextStyle(color: AppTheme.textPrimary, fontSize: 13),
+                        style: TextStyle(color: AppTheme.textPrimary, fontSize: 13),
                         decoration: _inputDecoration('Categoría'),
                         items: const [
                           DropdownMenuItem(value: 'vaca', child: Text('Vaca')),
@@ -131,7 +134,7 @@ Future<bool> showAddAnimalDialog(BuildContext context) async {
                     Expanded(
                       child: TextField(controller: weightCtrl,
                           keyboardType: TextInputType.number,
-                          style: const TextStyle(color: AppTheme.textPrimary, fontSize: 13),
+                          style: TextStyle(color: AppTheme.textPrimary, fontSize: 13),
                           decoration: _inputDecoration('Peso (kg)', icon: Icons.monitor_weight)),
                     ),
                     const SizedBox(width: 10),
@@ -139,7 +142,7 @@ Future<bool> showAddAnimalDialog(BuildContext context) async {
                       child: DropdownButtonFormField<String>(
                         initialValue: status,
                         dropdownColor: AppTheme.card,
-                        style: const TextStyle(color: AppTheme.textPrimary, fontSize: 13),
+                        style: TextStyle(color: AppTheme.textPrimary, fontSize: 13),
                         decoration: _inputDecoration('Estado'),
                         items: const [
                           DropdownMenuItem(value: 'active', child: Text('Activo')),
@@ -152,10 +155,45 @@ Future<bool> showAddAnimalDialog(BuildContext context) async {
                   ],
                 ),
 
-                const SizedBox(height: 10),
+                SizedBox(height: 10),
                 TextField(controller: notesCtrl, maxLines: 2,
-                    style: const TextStyle(color: AppTheme.textPrimary, fontSize: 13),
+                    style: TextStyle(color: AppTheme.textPrimary, fontSize: 13),
                     decoration: _inputDecoration('Notas')),
+                
+                const SizedBox(height: 14),
+                _sectionTitle('COLLAR INTELIGENTE (IoT)'),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: deviceIdCtrl,
+                        style: TextStyle(color: AppTheme.textPrimary, fontSize: 13),
+                        decoration: _inputDecoration('ID del Collar NFC', icon: Icons.nfc),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    ElevatedButton.icon(
+                      onPressed: () async {
+                        final scannedId = await showDialog<String>(
+                          context: context,
+                          builder: (ctx) => const NfcScannerDialog(),
+                        );
+                        if (scannedId != null) {
+                          setState(() {
+                            deviceIdCtrl.text = scannedId;
+                          });
+                        }
+                      },
+                      icon: const Icon(Icons.wifi_tethering, size: 16),
+                      label: const Text('Escanear'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.secondary.withValues(alpha: 0.1),
+                        foregroundColor: AppTheme.secondary,
+                        elevation: 0,
+                      ),
+                    ),
+                  ],
+                ),
 
                 const SizedBox(height: 20),
                 SizedBox(
@@ -175,6 +213,7 @@ Future<bool> showAddAnimalDialog(BuildContext context) async {
                           'status': status,
                           'weight_kg': double.tryParse(weightCtrl.text) ?? 0,
                           'notes': notesCtrl.text.trim(),
+                          'device_id': deviceIdCtrl.text.trim().isEmpty ? null : deviceIdCtrl.text.trim(),
                         });
                         if (ctx.mounted) Navigator.pop(ctx, true);
                       } catch (e) {
@@ -238,12 +277,12 @@ Future<bool> showAddMedicalDialog(BuildContext context, {int? animalId}) async {
               children: [
                 Row(
                   children: [
-                    const Icon(Icons.medical_services, color: AppTheme.primary, size: 22),
-                    const SizedBox(width: 8),
-                    const Text('Registro Médico', style: TextStyle(
+                    Icon(Icons.medical_services, color: AppTheme.primary, size: 22),
+                    SizedBox(width: 8),
+                    Text('Registro Médico', style: TextStyle(
                         color: AppTheme.textPrimary, fontWeight: FontWeight.w700, fontSize: 18)),
-                    const Spacer(),
-                    IconButton(icon: const Icon(Icons.close, color: AppTheme.textSecondary, size: 20),
+                    Spacer(),
+                    IconButton(icon: Icon(Icons.close, color: AppTheme.textSecondary, size: 20),
                         onPressed: () => Navigator.pop(ctx, false)),
                   ],
                 ),
@@ -252,7 +291,7 @@ Future<bool> showAddMedicalDialog(BuildContext context, {int? animalId}) async {
                 if (animalId == null) ...[
                   TextField(controller: animalIdCtrl,
                       keyboardType: TextInputType.number,
-                      style: const TextStyle(color: AppTheme.textPrimary, fontSize: 13),
+                      style: TextStyle(color: AppTheme.textPrimary, fontSize: 13),
                       decoration: _inputDecoration('ID Animal', icon: Icons.pets)),
                   const SizedBox(height: 10),
                 ],
@@ -260,7 +299,7 @@ Future<bool> showAddMedicalDialog(BuildContext context, {int? animalId}) async {
                 DropdownButtonFormField<String>(
                   initialValue: recordType,
                   dropdownColor: AppTheme.card,
-                  style: const TextStyle(color: AppTheme.textPrimary, fontSize: 13),
+                  style: TextStyle(color: AppTheme.textPrimary, fontSize: 13),
                   decoration: _inputDecoration('Tipo'),
                   items: const [
                     DropdownMenuItem(value: 'vaccine', child: Text('Vacuna')),
@@ -270,34 +309,34 @@ Future<bool> showAddMedicalDialog(BuildContext context, {int? animalId}) async {
                   ],
                   onChanged: (v) => setState(() => recordType = v!),
                 ),
-                const SizedBox(height: 10),
+                SizedBox(height: 10),
 
                 TextField(controller: productCtrl,
-                    style: const TextStyle(color: AppTheme.textPrimary, fontSize: 13),
+                    style: TextStyle(color: AppTheme.textPrimary, fontSize: 13),
                     decoration: _inputDecoration('Producto / Medicamento', icon: Icons.medication)),
                 const SizedBox(height: 10),
 
                 Row(
                   children: [
                     Expanded(child: TextField(controller: doseCtrl,
-                        style: const TextStyle(color: AppTheme.textPrimary, fontSize: 13),
+                        style: TextStyle(color: AppTheme.textPrimary, fontSize: 13),
                         decoration: _inputDecoration('Dosis'))),
-                    const SizedBox(width: 10),
+                    SizedBox(width: 10),
                     Expanded(child: TextField(controller: costCtrl,
                         keyboardType: TextInputType.number,
-                        style: const TextStyle(color: AppTheme.textPrimary, fontSize: 13),
+                        style: TextStyle(color: AppTheme.textPrimary, fontSize: 13),
                         decoration: _inputDecoration('Costo \$'))),
                   ],
                 ),
-                const SizedBox(height: 10),
+                SizedBox(height: 10),
 
                 TextField(controller: adminCtrl,
-                    style: const TextStyle(color: AppTheme.textPrimary, fontSize: 13),
+                    style: TextStyle(color: AppTheme.textPrimary, fontSize: 13),
                     decoration: _inputDecoration('Administrado por', icon: Icons.person)),
-                const SizedBox(height: 10),
+                SizedBox(height: 10),
 
                 TextField(controller: notesCtrl, maxLines: 2,
-                    style: const TextStyle(color: AppTheme.textPrimary, fontSize: 13),
+                    style: TextStyle(color: AppTheme.textPrimary, fontSize: 13),
                     decoration: _inputDecoration('Notas')),
 
                 const SizedBox(height: 20),
@@ -373,12 +412,12 @@ Future<bool> showAddWeightDialog(BuildContext context, {int? animalId}) async {
             children: [
               Row(
                 children: [
-                  const Icon(Icons.monitor_weight, color: AppTheme.primary, size: 22),
-                  const SizedBox(width: 8),
-                  const Text('Registrar Peso', style: TextStyle(
+                  Icon(Icons.monitor_weight, color: AppTheme.primary, size: 22),
+                  SizedBox(width: 8),
+                  Text('Registrar Peso', style: TextStyle(
                       color: AppTheme.textPrimary, fontWeight: FontWeight.w700, fontSize: 18)),
-                  const Spacer(),
-                  IconButton(icon: const Icon(Icons.close, color: AppTheme.textSecondary, size: 20),
+                  Spacer(),
+                  IconButton(icon: Icon(Icons.close, color: AppTheme.textSecondary, size: 20),
                       onPressed: () => Navigator.pop(ctx, false)),
                 ],
               ),
@@ -387,25 +426,25 @@ Future<bool> showAddWeightDialog(BuildContext context, {int? animalId}) async {
               if (animalId == null) ...[
                 TextField(controller: animalIdCtrl,
                     keyboardType: TextInputType.number,
-                    style: const TextStyle(color: AppTheme.textPrimary, fontSize: 13),
+                    style: TextStyle(color: AppTheme.textPrimary, fontSize: 13),
                     decoration: _inputDecoration('ID Animal', icon: Icons.pets)),
                 const SizedBox(height: 10),
               ],
 
               TextField(controller: weightCtrl,
                   keyboardType: TextInputType.number,
-                  style: const TextStyle(color: AppTheme.textPrimary, fontSize: 13),
+                  style: TextStyle(color: AppTheme.textPrimary, fontSize: 13),
                   decoration: _inputDecoration('Peso (kg)', icon: Icons.monitor_weight)),
               const SizedBox(height: 10),
 
               TextField(controller: bcsCtrl,
                   keyboardType: TextInputType.number,
-                  style: const TextStyle(color: AppTheme.textPrimary, fontSize: 13),
+                  style: TextStyle(color: AppTheme.textPrimary, fontSize: 13),
                   decoration: _inputDecoration('Condición Corporal (1-5)', icon: Icons.star_half)),
-              const SizedBox(height: 10),
+              SizedBox(height: 10),
 
               TextField(controller: notesCtrl, maxLines: 2,
-                  style: const TextStyle(color: AppTheme.textPrimary, fontSize: 13),
+                  style: TextStyle(color: AppTheme.textPrimary, fontSize: 13),
                   decoration: _inputDecoration('Notas')),
 
               const SizedBox(height: 20),
@@ -481,12 +520,12 @@ Future<bool> showAddFinancialDialog(BuildContext context) async {
               children: [
                 Row(
                   children: [
-                    const Icon(Icons.account_balance_wallet, color: AppTheme.primary, size: 22),
-                    const SizedBox(width: 8),
-                    const Text('Movimiento Financiero', style: TextStyle(
+                    Icon(Icons.account_balance_wallet, color: AppTheme.primary, size: 22),
+                    SizedBox(width: 8),
+                    Text('Movimiento Financiero', style: TextStyle(
                         color: AppTheme.textPrimary, fontWeight: FontWeight.w700, fontSize: 18)),
-                    const Spacer(),
-                    IconButton(icon: const Icon(Icons.close, color: AppTheme.textSecondary, size: 20),
+                    Spacer(),
+                    IconButton(icon: Icon(Icons.close, color: AppTheme.textSecondary, size: 20),
                         onPressed: () => Navigator.pop(ctx, false)),
                   ],
                 ),
@@ -495,7 +534,7 @@ Future<bool> showAddFinancialDialog(BuildContext context) async {
                 DropdownButtonFormField<String>(
                   initialValue: eventType,
                   dropdownColor: AppTheme.card,
-                  style: const TextStyle(color: AppTheme.textPrimary, fontSize: 13),
+                  style: TextStyle(color: AppTheme.textPrimary, fontSize: 13),
                   decoration: _inputDecoration('Tipo'),
                   items: const [
                     DropdownMenuItem(value: 'sale', child: Text('Venta')),
@@ -509,29 +548,29 @@ Future<bool> showAddFinancialDialog(BuildContext context) async {
 
                 TextField(controller: amountCtrl,
                     keyboardType: TextInputType.number,
-                    style: const TextStyle(color: AppTheme.textPrimary, fontSize: 13),
+                    style: TextStyle(color: AppTheme.textPrimary, fontSize: 13),
                     decoration: _inputDecoration('Monto \$', icon: Icons.attach_money)),
                 const SizedBox(height: 10),
 
                 TextField(controller: animalIdCtrl,
                     keyboardType: TextInputType.number,
-                    style: const TextStyle(color: AppTheme.textPrimary, fontSize: 13),
+                    style: TextStyle(color: AppTheme.textPrimary, fontSize: 13),
                     decoration: _inputDecoration('ID Animal (opcional)', icon: Icons.pets)),
-                const SizedBox(height: 10),
+                SizedBox(height: 10),
 
                 TextField(controller: buyerSellerCtrl,
-                    style: const TextStyle(color: AppTheme.textPrimary, fontSize: 13),
+                    style: TextStyle(color: AppTheme.textPrimary, fontSize: 13),
                     decoration: _inputDecoration('Comprador / Vendedor', icon: Icons.person)),
                 const SizedBox(height: 10),
 
                 TextField(controller: weightCtrl,
                     keyboardType: TextInputType.number,
-                    style: const TextStyle(color: AppTheme.textPrimary, fontSize: 13),
+                    style: TextStyle(color: AppTheme.textPrimary, fontSize: 13),
                     decoration: _inputDecoration('Peso al evento (kg)', icon: Icons.monitor_weight)),
-                const SizedBox(height: 10),
+                SizedBox(height: 10),
 
                 TextField(controller: notesCtrl, maxLines: 2,
-                    style: const TextStyle(color: AppTheme.textPrimary, fontSize: 13),
+                    style: TextStyle(color: AppTheme.textPrimary, fontSize: 13),
                     decoration: _inputDecoration('Notas')),
 
                 const SizedBox(height: 20),

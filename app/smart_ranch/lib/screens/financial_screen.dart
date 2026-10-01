@@ -57,27 +57,43 @@ class _FinancialScreenState extends State<FinancialScreen> {
           const SizedBox(height: 8),
 
           // 3-panel layout
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Left — Income summary
-              Expanded(
-                flex: 3,
-                child: _buildIncomeSummary(totalIncome),
-              ),
-              const SizedBox(width: 8),
-              // Center — Expense breakdown
-              Expanded(
-                flex: 3,
-                child: _buildExpenseBreakdown(sortedExpenses, totalExpenses),
-              ),
-              const SizedBox(width: 8),
-              // Right — Recent transactions
-              Expanded(
-                flex: 4,
-                child: _buildTransactionLog(),
-              ),
-            ],
+          LayoutBuilder(
+            builder: (context, constraints) {
+              if (constraints.maxWidth < 800) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _buildIncomeSummary(totalIncome),
+                    const SizedBox(height: 12),
+                    _buildExpenseBreakdown(sortedExpenses, totalExpenses),
+                    const SizedBox(height: 12),
+                    _buildTransactionLog(),
+                  ],
+                );
+              }
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Left — Income summary
+                  Expanded(
+                    flex: 3,
+                    child: _buildIncomeSummary(totalIncome),
+                  ),
+                  const SizedBox(width: 8),
+                  // Center — Expense breakdown
+                  Expanded(
+                    flex: 3,
+                    child: _buildExpenseBreakdown(sortedExpenses, totalExpenses),
+                  ),
+                  const SizedBox(width: 8),
+                  // Right — Recent transactions
+                  Expanded(
+                    flex: 4,
+                    child: _buildTransactionLog(),
+                  ),
+                ],
+              );
+            },
           ),
         ],
       ),
@@ -86,15 +102,17 @@ class _FinancialScreenState extends State<FinancialScreen> {
 
   Widget _buildPLSummary(double income, double expenses, double profit) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: AppTheme.card, borderRadius: BorderRadius.circular(10),
         border: Border.all(color: AppTheme.divider),
       ),
       child: Column(
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
+          Wrap(
+            alignment: WrapAlignment.spaceAround,
+            spacing: 12,
+            runSpacing: 12,
             children: [
               _FinStat(icon: Icons.trending_up_rounded, label: 'Ingresos',
                   value: '\$${_formatMoney(income)}', color: AppTheme.primary),
@@ -118,10 +136,10 @@ class _FinancialScreenState extends State<FinancialScreen> {
               minHeight: 5,
             ),
           ),
-          const SizedBox(height: 3),
+          SizedBox(height: 3),
           Text(
             'Gastos: ${(income > 0 ? (expenses / income * 100) : 0).toStringAsFixed(0)}% de ingresos',
-            style: const TextStyle(color: AppTheme.textSecondary, fontSize: 10),
+            style: TextStyle(color: AppTheme.textSecondary, fontSize: 10),
           ),
         ],
       ),
@@ -143,26 +161,26 @@ class _FinancialScreenState extends State<FinancialScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.all(12),
+            padding: EdgeInsets.all(12),
             child: Row(
               children: [
                 Icon(Icons.trending_up_rounded, size: 16, color: AppTheme.primary),
-                const SizedBox(width: 6),
-                const Text('Ingresos', style: TextStyle(
+                SizedBox(width: 6),
+                Text('Ingresos', style: TextStyle(
                     color: AppTheme.textPrimary, fontWeight: FontWeight.w600, fontSize: 13)),
               ],
             ),
           ),
-          const Divider(height: 1, color: AppTheme.divider),
+          Divider(height: 1, color: AppTheme.divider),
           ...incomeByCategory.entries.map((e) => Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             child: Row(
               children: [
                 Icon(_categoryIcon(e.key), size: 14, color: AppTheme.primary),
-                const SizedBox(width: 8),
-                Expanded(child: Text(e.key, style: const TextStyle(color: AppTheme.textPrimary, fontSize: 11))),
+                SizedBox(width: 8),
+                Expanded(child: Text(e.key, style: TextStyle(color: AppTheme.textPrimary, fontSize: 11))),
                 Text('\$${_formatMoney(e.value)}',
-                    style: const TextStyle(color: AppTheme.primary, fontWeight: FontWeight.w600, fontSize: 11)),
+                    style: TextStyle(color: AppTheme.primary, fontWeight: FontWeight.w600, fontSize: 11)),
               ],
             ),
           )),
@@ -174,7 +192,7 @@ class _FinancialScreenState extends State<FinancialScreen> {
   Widget _buildExpenseBreakdown(List<MapEntry<String, double>> sorted, double total) {
     final colors = [
       AppTheme.thiDanger, AppTheme.thiAlert, AppTheme.primary,
-      AppTheme.secondary, const Color(0xFFAB47BC), const Color(0xFF42A5F5),
+      AppTheme.secondary, Color(0xFFAB47BC), Color(0xFF42A5F5),
     ];
 
     return Container(
@@ -186,17 +204,17 @@ class _FinancialScreenState extends State<FinancialScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.all(12),
+            padding: EdgeInsets.all(12),
             child: Row(
               children: [
                 Icon(Icons.pie_chart_rounded, size: 16, color: AppTheme.thiDanger),
-                const SizedBox(width: 6),
-                const Text('Desglose de Gastos', style: TextStyle(
+                SizedBox(width: 6),
+                Text('Desglose de Gastos', style: TextStyle(
                     color: AppTheme.textPrimary, fontWeight: FontWeight.w600, fontSize: 13)),
               ],
             ),
           ),
-          const Divider(height: 1, color: AppTheme.divider),
+          Divider(height: 1, color: AppTheme.divider),
           ...List.generate(sorted.length, (index) {
             final entry = sorted[index];
             final pct = total > 0 ? entry.value / total : 0;
@@ -209,14 +227,14 @@ class _FinancialScreenState extends State<FinancialScreen> {
                   Row(
                     children: [
                       Icon(_categoryIcon(entry.key), size: 12, color: color),
-                      const SizedBox(width: 6),
+                      SizedBox(width: 6),
                       Expanded(child: Text(entry.key,
-                          style: const TextStyle(color: AppTheme.textPrimary, fontSize: 11))),
+                          style: TextStyle(color: AppTheme.textPrimary, fontSize: 11))),
                       Text('\$${_formatMoney(entry.value)}',
                           style: TextStyle(color: color, fontWeight: FontWeight.w600, fontSize: 11)),
-                      const SizedBox(width: 6),
+                      SizedBox(width: 6),
                       Text('${(pct * 100).toStringAsFixed(0)}%',
-                          style: const TextStyle(color: AppTheme.textSecondary, fontSize: 9)),
+                          style: TextStyle(color: AppTheme.textSecondary, fontSize: 9)),
                     ],
                   ),
                   const SizedBox(height: 3),
@@ -249,21 +267,21 @@ class _FinancialScreenState extends State<FinancialScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.all(12),
+            padding: EdgeInsets.all(12),
             child: Row(
               children: [
                 Icon(Icons.receipt_long_rounded, size: 16, color: AppTheme.textSecondary),
-                const SizedBox(width: 6),
-                const Text('Movimientos Recientes', style: TextStyle(
+                SizedBox(width: 6),
+                Text('Movimientos Recientes', style: TextStyle(
                     color: AppTheme.textPrimary, fontWeight: FontWeight.w600, fontSize: 13)),
               ],
             ),
           ),
-          const Divider(height: 1, color: AppTheme.divider),
+          Divider(height: 1, color: AppTheme.divider),
           ..._transactions.map((tx) {
             final isIncome = tx.type == 'income';
             return Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
                 border: Border(bottom: BorderSide(color: AppTheme.divider.withAlpha(80))),
               ),
@@ -284,10 +302,10 @@ class _FinancialScreenState extends State<FinancialScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(tx.description,
-                            style: const TextStyle(color: AppTheme.textPrimary, fontSize: 11),
+                            style: TextStyle(color: AppTheme.textPrimary, fontSize: 11),
                             maxLines: 1, overflow: TextOverflow.ellipsis),
                         Text('${tx.category} · ${tx.date.day}/${tx.date.month}',
-                            style: const TextStyle(color: AppTheme.textSecondary, fontSize: 9)),
+                            style: TextStyle(color: AppTheme.textSecondary, fontSize: 9)),
                       ],
                     ),
                   ),
@@ -345,9 +363,9 @@ class _FinStat extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Icon(icon, size: 18, color: color),
-        const SizedBox(height: 2),
+        SizedBox(height: 2),
         Text(value, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: color)),
-        Text(label, style: const TextStyle(fontSize: 9, color: AppTheme.textSecondary)),
+        Text(label, style: TextStyle(fontSize: 9, color: AppTheme.textSecondary)),
       ],
     );
   }

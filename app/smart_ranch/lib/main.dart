@@ -14,6 +14,8 @@ import 'screens/financial_screen.dart';
 import 'screens/peso_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/report_screen.dart';
+import 'screens/add_animal_screen.dart';
+import 'screens/system_status_screen.dart';
 import 'services/demo_service.dart';
 
 void main() {
@@ -24,15 +26,51 @@ void main() {
   runApp(const SmartRanchApp());
 }
 
-class SmartRanchApp extends StatelessWidget {
+class SmartRanchApp extends StatefulWidget {
   const SmartRanchApp({super.key});
 
   @override
+  State<SmartRanchApp> createState() => _SmartRanchAppState();
+}
+
+class _SmartRanchAppState extends State<SmartRanchApp> with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _updateTheme();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangePlatformBrightness() {
+    setState(() {
+      _updateTheme();
+    });
+    super.didChangePlatformBrightness();
+  }
+
+  void _updateTheme() {
+    final brightness = WidgetsBinding.instance.platformDispatcher.platformBrightness;
+    AppTheme.isDark = brightness == Brightness.dark;
+  }
+
+  @override
   Widget build(BuildContext context) {
+    // Re-check just in case
+    _updateTheme();
+    
     return MaterialApp(
       title: 'Smart Ranch - Ganadería Inteligente',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.darkTheme,
+      theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
+      themeMode: ThemeMode.system,
       home: const AuthGate(),
     );
   }
@@ -86,6 +124,8 @@ class _MainShellState extends State<MainShell> {
     _Section('GPS / Mapa', Icons.map_rounded),
     _Section('Finanzas', Icons.account_balance_rounded),
     _Section('Reportes', Icons.analytics_rounded),
+    _Section('Agregar Animal', Icons.add_circle_outline_rounded),
+    _Section('Estado Sistema', Icons.dns_rounded),
   ];
 
   @override
@@ -100,10 +140,14 @@ class _MainShellState extends State<MainShell> {
     super.dispose();
   }
 
+  void _navigateTo(int index) {
+    setState(() => _selectedIndex = index);
+  }
+
   Widget _buildScreen(int index) {
     switch (index) {
       case 0:
-        return const DashboardHomeScreen();
+        return DashboardHomeScreen(onNavigate: _navigateTo);
       case 1:
         return DashboardScreen(demoService: _demoService);
       case 2:
@@ -126,166 +170,219 @@ class _MainShellState extends State<MainShell> {
         return const FinancialScreen();
       case 11:
         return const ReportScreen();
+      case 12:
+        return const AddAnimalScreen();
+      case 13:
+        return const SystemStatusScreen();
       default:
         return const Center(child: Text('Pantalla no encontrada'));
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: Row(
+  Widget _buildSidebar({required bool isMobile}) {
+    final width = isMobile ? 250.0 : (_railExtended ? 200.0 : 72.0);
+    final isExtended = isMobile || _railExtended;
+    
+    Widget sidebar = AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      curve: Curves.easeInOut,
+      width: width,
+      color: AppTheme.surface,
+      child: Column(
         children: [
-          // --- Left Sidebar ---
-          MouseRegion(
-            onEnter: (_) => setState(() => _railExtended = true),
-            onExit: (_) => setState(() => _railExtended = false),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              curve: Curves.easeInOut,
-              width: _railExtended ? 200 : 72,
-              color: AppTheme.surface,
-              child: Column(
-                children: [
-                  // Brand Header
-                  Container(
-                    height: 56,
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 36,
-                          height: 36,
-                          decoration: BoxDecoration(
-                            color: AppTheme.primary.withAlpha(25),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: const Icon(
-                            Icons.agriculture_rounded,
-                            color: AppTheme.primary,
-                            size: 22,
-                          ),
-                        ),
-                        if (_railExtended) ...[
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Text(
-                              'Smart Ranch',
-                              style: Theme.of(context).textTheme.titleLarge?.copyWith(fontSize: 15),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
+          // Brand Header
+          Container(
+            height: isMobile ? 120 : 56,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+            alignment: isMobile ? Alignment.bottomLeft : Alignment.centerLeft,
+            child: Row(
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: Image.asset(
+                    'assets/images/logo_icon.png',
+                    width: 32,
+                    height: 32,
                   ),
-                  const Divider(height: 1, color: AppTheme.divider),
-
-                  // Scrollable Nav Items
+                ),
+                if (isExtended) ...[
+                  const SizedBox(width: 12),
                   Expanded(
-                    child: SingleChildScrollView(
-                      padding: const EdgeInsets.symmetric(vertical: 6),
-                      child: Column(
-                        children: _sections.asMap().entries.map((e) {
-                          final idx = e.key;
-                          final section = e.value;
-                          final selected = idx == _selectedIndex;
-                          return _NavItem(
-                            icon: section.icon,
-                            label: section.label,
-                            selected: selected,
-                            extended: _railExtended,
-                            onTap: () => setState(() => _selectedIndex = idx),
-                          );
-                        }).toList(),
-                      ),
-                    ),
-                  ),
-
-                  // Connection Status at bottom
-                  const Divider(height: 1, color: AppTheme.divider),
-                  Padding(
-                    padding: const EdgeInsets.all(12),
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 8,
-                          height: 8,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: _demoService.isRunning
-                                ? AppTheme.primary
-                                : AppTheme.thiEmergency,
-                          ),
-                        ),
-                        if (_railExtended) ...[
-                          const SizedBox(width: 8),
-                          Text(
-                            _demoService.isRunning ? 'Conectado' : 'Desconectado',
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: AppTheme.textSecondary,
-                            ),
-                          ),
-                        ],
-                      ],
+                    child: Text(
+                      'Smart Ranch',
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(fontSize: 15),
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                 ],
+              ],
+            ),
+          ),
+          Divider(height: 1, color: AppTheme.divider),
+
+          // Scrollable Nav Items
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(vertical: 6),
+              child: Column(
+                children: _sections.asMap().entries.map((e) {
+                  final idx = e.key;
+                  final section = e.value;
+                  final selected = idx == _selectedIndex;
+                  return _NavItem(
+                    icon: section.icon,
+                    label: section.label,
+                    selected: selected,
+                    extended: isExtended,
+                    onTap: () {
+                      setState(() => _selectedIndex = idx);
+                      if (isMobile) {
+                        Navigator.pop(context); // Close drawer
+                      }
+                    },
+                  );
+                }).toList(),
               ),
             ),
           ),
 
-          // Vertical Divider
-          VerticalDivider(width: 1, thickness: 1, color: AppTheme.divider),
-
-          // --- Main Content ---
-          Expanded(
-            child: Column(
+          // Connection Status at bottom
+          Divider(height: 1, color: AppTheme.divider),
+          Padding(
+            padding: EdgeInsets.fromLTRB(12, 12, 12, isMobile ? 24 : 12),
+            child: Row(
               children: [
-                // Title Bar
                 Container(
-                  height: 44,
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  width: 8,
+                  height: 8,
                   decoration: BoxDecoration(
-                    color: AppTheme.background,
-                    border: Border(
-                      bottom: BorderSide(color: AppTheme.divider, width: 1),
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        _sections[_selectedIndex].icon,
-                        size: 16,
-                        color: AppTheme.primary,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        _sections[_selectedIndex].label,
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontSize: 14,
-                        ),
-                      ),
-                    ],
+                    shape: BoxShape.circle,
+                    color: _demoService.isRunning
+                        ? AppTheme.primary
+                        : AppTheme.thiEmergency,
                   ),
                 ),
-
-                // Body
-                Expanded(
-                  child: IndexedStack(
-                    index: _selectedIndex,
-                    children: List.generate(
-                      _sections.length,
-                      (i) => _buildScreen(i),
+                if (isExtended) ...[
+                  const SizedBox(width: 8),
+                  Text(
+                    _demoService.isRunning ? 'Conectado' : 'Desconectado',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: AppTheme.textSecondary,
                     ),
                   ),
-                ),
+                ],
               ],
             ),
           ),
         ],
       ),
+    );
+
+    if (isMobile) return SafeArea(child: sidebar);
+
+    return MouseRegion(
+      onEnter: (_) => setState(() => _railExtended = true),
+      onExit: (_) => setState(() => _railExtended = false),
+      child: sidebar,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isMobile = constraints.maxWidth < 800;
+
+        final content = Column(
+          children: [
+            // Title Bar (Desktop only, Mobile uses AppBar)
+            if (!isMobile)
+              Container(
+                height: 44,
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                decoration: BoxDecoration(
+                  color: AppTheme.background,
+                  border: Border(
+                    bottom: BorderSide(color: AppTheme.divider, width: 1),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      _sections[_selectedIndex].icon,
+                      size: 16,
+                      color: AppTheme.primary,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      _sections[_selectedIndex].label,
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+            // Body
+            Expanded(
+              child: IndexedStack(
+                index: _selectedIndex,
+                children: List.generate(
+                  _sections.length,
+                  (i) => _buildScreen(i),
+                ),
+              ),
+            ),
+          ],
+        );
+
+        if (isMobile) {
+          return Scaffold(
+            appBar: AppBar(
+              backgroundColor: AppTheme.background,
+              foregroundColor: AppTheme.textPrimary,
+              elevation: 0,
+              title: Row(
+                children: [
+                  Icon(
+                    _sections[_selectedIndex].icon,
+                    size: 18,
+                    color: AppTheme.primary,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    _sections[_selectedIndex].label,
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontSize: 16,
+                    ),
+                  ),
+                ],
+              ),
+              bottom: PreferredSize(
+                preferredSize: const Size.fromHeight(1),
+                child: Container(color: AppTheme.divider, height: 1),
+              ),
+            ),
+            drawer: Drawer(
+              backgroundColor: AppTheme.surface,
+              child: _buildSidebar(isMobile: true),
+            ),
+            body: content,
+          );
+        }
+
+        return Scaffold(
+          body: Row(
+            children: [
+              _buildSidebar(isMobile: false),
+              VerticalDivider(width: 1, thickness: 1, color: AppTheme.divider),
+              Expanded(child: content),
+            ],
+          ),
+        );
+      },
     );
   }
 }
@@ -346,7 +443,7 @@ class _NavItemState extends State<_NavItem> {
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 150),
             height: 40,
-            padding: const EdgeInsets.symmetric(horizontal: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 10),
             decoration: BoxDecoration(
               color: bgColor,
               borderRadius: BorderRadius.circular(8),
@@ -358,7 +455,7 @@ class _NavItemState extends State<_NavItem> {
               children: [
                 Icon(widget.icon, size: 19, color: iconColor),
                 if (widget.extended) ...[
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       widget.label,

@@ -1,20 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-/// Premium dark theme for Smart Ranch
+/// Theme for Smart Ranch (Supports Light and Dark Mode)
 class AppTheme {
+  // --- Global Theme State ---
+  static bool isDark = true;
+
   // --- Brand Colors ---
-  static const Color primary = Color(0xFF00C853); // Vibrant green
-  static const Color primaryDark = Color(0xFF009624);
+  static const Color primary = Color(0xFF2596BE); // Blue accent
+  static const Color primaryDark = Color(0xFF1E7A9B);
   static const Color secondary = Color(0xFFFF6D00); // Warm orange (alerts)
-  static const Color surface = Color(0xFF1A1A2E);
-  static const Color surfaceVariant = Color(0xFF16213E);
-  static const Color card = Color(0xFF1E2A47);
-  static const Color cardBright = Color(0xFF243356);
-  static const Color background = Color(0xFF0F0F1E);
-  static const Color textPrimary = Color(0xFFF0F0F5);
-  static const Color textSecondary = Color(0xFF9BA4B8);
-  static const Color divider = Color(0xFF2A3555);
+
+  static Color get surface => isDark ? const Color(0xFF121212) : const Color(0xFFF9FAFB);
+  static Color get surfaceVariant => isDark ? const Color(0xFF1E1E1E) : const Color(0xFFF3F4F6);
+  static Color get card => isDark ? const Color(0xFF1A1A1A) : const Color(0xFFFFFFFF);
+  static Color get cardBright => isDark ? const Color(0xFF2C2C2C) : const Color(0xFFF0FDF4);
+  static Color get background => isDark ? const Color(0xFF000000) : const Color(0xFFFFFFFF);
+  
+  static Color get textPrimary => isDark ? const Color(0xFFF0F0F5) : const Color(0xFF111827);
+  static Color get textSecondary => isDark ? const Color(0xFF9CA3AF) : const Color(0xFF6B7280);
+  static Color get divider => isDark ? const Color(0xFF333333) : const Color(0xFFE5E7EB);
 
   // --- THI Level Colors ---
   static const Color thiNormal = Color(0xFF00C853);
@@ -48,61 +53,83 @@ class AppTheme {
 
   // --- Theme Data ---
   static ThemeData get darkTheme {
+    return _buildTheme(Brightness.dark);
+  }
+  
+  static ThemeData get lightTheme {
+    return _buildTheme(Brightness.light);
+  }
+
+  static ThemeData _buildTheme(Brightness brightness) {
+    final bool isDarkTheme = brightness == Brightness.dark;
+    final bg = isDarkTheme ? const Color(0xFF000000) : const Color(0xFFFFFFFF);
+    final surf = isDarkTheme ? const Color(0xFF121212) : const Color(0xFFF9FAFB);
+    final txt = isDarkTheme ? const Color(0xFFF0F0F5) : const Color(0xFF111827);
+    final txtSec = isDarkTheme ? const Color(0xFF9CA3AF) : const Color(0xFF6B7280);
+    final cardCol = isDarkTheme ? const Color(0xFF1A1A1A) : const Color(0xFFFFFFFF);
+
     return ThemeData(
       useMaterial3: true,
-      brightness: Brightness.dark,
-      scaffoldBackgroundColor: background,
-      colorScheme: const ColorScheme.dark(
+      brightness: brightness,
+      scaffoldBackgroundColor: bg,
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: primary,
+        brightness: brightness,
         primary: primary,
         secondary: secondary,
-        surface: surface,
+        surface: surf,
         onPrimary: Colors.white,
         onSecondary: Colors.white,
-        onSurface: textPrimary,
+        onSurface: txt,
       ),
-      textTheme: GoogleFonts.interTextTheme(ThemeData.dark().textTheme)
-          .copyWith(
+      textTheme: GoogleFonts.interTextTheme(
+        isDarkTheme ? ThemeData.dark().textTheme : ThemeData.light().textTheme
+      ).copyWith(
             headlineLarge: GoogleFonts.outfit(
               fontSize: 28,
               fontWeight: FontWeight.w700,
-              color: textPrimary,
+              color: txt,
             ),
             headlineMedium: GoogleFonts.outfit(
               fontSize: 22,
               fontWeight: FontWeight.w600,
-              color: textPrimary,
+              color: txt,
             ),
             titleLarge: GoogleFonts.outfit(
               fontSize: 18,
               fontWeight: FontWeight.w600,
-              color: textPrimary,
+              color: txt,
             ),
             titleMedium: GoogleFonts.inter(
               fontSize: 14,
               fontWeight: FontWeight.w500,
-              color: textSecondary,
+              color: txtSec,
             ),
-            bodyLarge: GoogleFonts.inter(fontSize: 16, color: textPrimary),
-            bodyMedium: GoogleFonts.inter(fontSize: 14, color: textSecondary),
+            bodyLarge: GoogleFonts.inter(fontSize: 16, color: txt),
+            bodyMedium: GoogleFonts.inter(fontSize: 14, color: txtSec),
             labelLarge: GoogleFonts.inter(
               fontSize: 13,
               fontWeight: FontWeight.w600,
-              color: textPrimary,
+              color: txt,
             ),
           ),
       cardTheme: CardThemeData(
-        color: card,
-        elevation: 0,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        color: cardCol,
+        elevation: isDarkTheme ? 0 : 1,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: isDarkTheme ? BorderSide.none : const BorderSide(color: Color(0xFFE5E7EB)),
+        ),
       ),
       appBarTheme: AppBarTheme(
-        backgroundColor: surface,
+        backgroundColor: surf,
         elevation: 0,
         centerTitle: false,
+        iconTheme: IconThemeData(color: txt),
         titleTextStyle: GoogleFonts.outfit(
           fontSize: 20,
           fontWeight: FontWeight.w700,
-          color: textPrimary,
+          color: txt,
         ),
       ),
     );

@@ -101,8 +101,8 @@ class _GpsMapScreenState extends State<GpsMapScreen> {
     final moving = _positions.where((p) => (p['speed'] as num?) != null && (p['speed'] as num) > 0.3).length;
 
     return Container(
-      margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      margin: EdgeInsets.fromLTRB(16, 12, 16, 0),
+      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
         color: AppTheme.card,
         borderRadius: BorderRadius.circular(10),
@@ -126,7 +126,7 @@ class _GpsMapScreenState extends State<GpsMapScreen> {
 
   Widget _buildMapArea() {
     return Container(
-      margin: const EdgeInsets.all(12),
+      margin: EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: AppTheme.card,
         borderRadius: BorderRadius.circular(12),
@@ -143,7 +143,7 @@ class _GpsMapScreenState extends State<GpsMapScreen> {
             Positioned(
               right: 12, top: 12,
               child: Container(
-                padding: const EdgeInsets.all(8),
+                padding: EdgeInsets.all(8),
                 decoration: BoxDecoration(
                   color: AppTheme.surface.withAlpha(230),
                   borderRadius: BorderRadius.circular(8),
@@ -166,12 +166,12 @@ class _GpsMapScreenState extends State<GpsMapScreen> {
             Positioned(
               left: 12, top: 12,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+                padding: EdgeInsets.symmetric(horizontal: 8, vertical: 5),
                 decoration: BoxDecoration(
                   color: AppTheme.surface.withAlpha(230),
                   borderRadius: BorderRadius.circular(6),
                 ),
-                child: const Row(
+                child: Row(
                   children: [
                     Icon(Icons.map_rounded, size: 14, color: AppTheme.primary),
                     SizedBox(width: 4),
@@ -210,8 +210,8 @@ class _GpsMapScreenState extends State<GpsMapScreen> {
 
           return Container(
             width: 150,
-            margin: const EdgeInsets.only(right: 8),
-            padding: const EdgeInsets.all(10),
+            margin: EdgeInsets.only(right: 8),
+            padding: EdgeInsets.all(10),
             decoration: BoxDecoration(
               color: AppTheme.card,
               borderRadius: BorderRadius.circular(10),
@@ -230,7 +230,7 @@ class _GpsMapScreenState extends State<GpsMapScreen> {
                     Expanded(
                       child: Text(
                         pos['animal_name'] ?? pos['device_id'] ?? '?',
-                        style: const TextStyle(color: AppTheme.textPrimary, fontWeight: FontWeight.w600, fontSize: 12),
+                        style: TextStyle(color: AppTheme.textPrimary, fontWeight: FontWeight.w600, fontSize: 12),
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
@@ -245,20 +245,20 @@ class _GpsMapScreenState extends State<GpsMapScreen> {
                     fontWeight: isOutOfZone ? FontWeight.w600 : FontWeight.normal,
                   ),
                 ),
-                const SizedBox(height: 3),
+                SizedBox(height: 3),
                 Row(
                   children: [
-                    const Icon(Icons.speed_rounded, size: 10, color: AppTheme.textSecondary),
-                    const SizedBox(width: 3),
+                    Icon(Icons.speed_rounded, size: 10, color: AppTheme.textSecondary),
+                    SizedBox(width: 3),
                     Text('${((pos['speed'] as num?) ?? 0).toStringAsFixed(1)} km/h',
-                        style: const TextStyle(color: AppTheme.textSecondary, fontSize: 10)),
-                    const Spacer(),
+                        style: TextStyle(color: AppTheme.textSecondary, fontSize: 10)),
+                    Spacer(),
                     Icon(Icons.battery_full_rounded, size: 10,
                         color: ((pos['battery_v'] as num?) ?? 4) < 3.5
                             ? AppTheme.thiDanger : AppTheme.textSecondary),
-                    const SizedBox(width: 2),
+                    SizedBox(width: 2),
                     Text('${((pos['battery_v'] as num?) ?? 0).toStringAsFixed(1)}V',
-                        style: const TextStyle(color: AppTheme.textSecondary, fontSize: 10)),
+                        style: TextStyle(color: AppTheme.textSecondary, fontSize: 10)),
                   ],
                 ),
               ],
@@ -372,9 +372,9 @@ class _StatItem extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Icon(icon, size: 16, color: color),
-        const SizedBox(height: 2),
+        SizedBox(height: 2),
         Text(value, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: color)),
-        Text(label, style: const TextStyle(fontSize: 9, color: AppTheme.textSecondary)),
+        Text(label, style: TextStyle(fontSize: 9, color: AppTheme.textSecondary)),
       ],
     );
   }
@@ -392,8 +392,8 @@ class _LegendItem extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Container(width: 8, height: 8, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
-        const SizedBox(width: 4),
-        Text(label, style: const TextStyle(color: AppTheme.textSecondary, fontSize: 10)),
+        SizedBox(width: 4),
+        Text(label, style: TextStyle(color: AppTheme.textSecondary, fontSize: 10)),
       ],
     );
   }

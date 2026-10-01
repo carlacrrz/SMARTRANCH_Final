@@ -89,14 +89,18 @@ class _HerdScreenState extends State<HerdScreen> {
       children: [
         // Stats + Search Bar
         Container(
-          margin: const EdgeInsets.fromLTRB(20, 12, 20, 0),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          margin: EdgeInsets.fromLTRB(20, 12, 20, 0),
+          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
           decoration: BoxDecoration(
             color: AppTheme.surfaceVariant,
             borderRadius: BorderRadius.circular(10),
             border: Border.all(color: AppTheme.divider),
           ),
-          child: Row(
+          child: Wrap(
+            spacing: 12,
+            runSpacing: 12,
+            alignment: WrapAlignment.start,
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
               // Stats
               _QuickStat(
@@ -105,21 +109,18 @@ class _HerdScreenState extends State<HerdScreen> {
                 label: 'Total',
                 color: AppTheme.primary,
               ),
-              const SizedBox(width: 16),
               _QuickStat(
                 icon: Icons.female_rounded,
                 value: '${_animals.where((a) => a.sex == "hembra" && a.status == "active").length}',
                 label: 'Hembras',
                 color: const Color(0xFFE91E63),
               ),
-              const SizedBox(width: 16),
               _QuickStat(
                 icon: Icons.male_rounded,
                 value: '${_animals.where((a) => a.sex == "macho" && a.status == "active").length}',
                 label: 'Machos',
                 color: const Color(0xFF2196F3),
               ),
-              const SizedBox(width: 16),
               _QuickStat(
                 icon: Icons.category_rounded,
                 value: '${_breeds.length}',
@@ -127,15 +128,13 @@ class _HerdScreenState extends State<HerdScreen> {
                 color: AppTheme.textSecondary,
               ),
 
-              const Spacer(),
-
               // Search
               SizedBox(
                 width: 260,
                 height: 36,
                 child: TextField(
                   onChanged: (v) => setState(() => _searchQuery = v),
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: AppTheme.textPrimary,
                     fontSize: 13,
                   ),
@@ -165,7 +164,6 @@ class _HerdScreenState extends State<HerdScreen> {
                   ),
                 ),
               ),
-              const SizedBox(width: 8),
 
               // Breed filter
               PopupMenuButton<String?>(
@@ -190,18 +188,24 @@ class _HerdScreenState extends State<HerdScreen> {
         // DataTable
         Expanded(
           child: Padding(
-            padding: const EdgeInsets.all(20),
+            padding: EdgeInsets.all(20),
             child: Container(
               decoration: BoxDecoration(
                 color: AppTheme.card,
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(color: AppTheme.divider),
               ),
-              child: Column(
-                children: [
-                  // Column Headers
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  return SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: SizedBox(
+                      width: constraints.maxWidth > 800 ? constraints.maxWidth : 800,
+                      child: Column(
+                        children: [
+                          // Column Headers
                   Container(
-                    padding: const EdgeInsets.symmetric(
+                    padding: EdgeInsets.symmetric(
                         horizontal: 16, vertical: 10),
                     decoration: BoxDecoration(
                       color: AppTheme.surfaceVariant,
@@ -220,13 +224,13 @@ class _HerdScreenState extends State<HerdScreen> {
                       ],
                     ),
                   ),
-                  const Divider(height: 1, color: AppTheme.divider),
+                  Divider(height: 1, color: AppTheme.divider),
 
                   // Rows
                   Expanded(
                     child: ListView.separated(
                       itemCount: filtered.length,
-                      separatorBuilder: (_, __) => const Divider(
+                      separatorBuilder: (_, __) => Divider(
                         height: 1,
                         color: AppTheme.divider,
                       ),
@@ -241,7 +245,7 @@ class _HerdScreenState extends State<HerdScreen> {
                           onExit: (_) =>
                               setState(() => _hoveredIndex = null),
                           child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 150),
+                            duration: Duration(milliseconds: 150),
                             color: isHovered
                                 ? AppTheme.primary.withAlpha(8)
                                 : Colors.transparent,
@@ -266,7 +270,7 @@ class _HerdScreenState extends State<HerdScreen> {
                                       const SizedBox(width: 8),
                                       Text(
                                         animal.name,
-                                        style: const TextStyle(
+                                        style: TextStyle(
                                           fontSize: 13,
                                           fontWeight: FontWeight.w600,
                                           color: AppTheme.textPrimary,
@@ -280,7 +284,7 @@ class _HerdScreenState extends State<HerdScreen> {
                                   flex: 2,
                                   child: Text(
                                     animal.siniigaTag,
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontSize: 12,
                                       color: AppTheme.textSecondary,
                                       fontFamily: 'monospace',
@@ -291,7 +295,7 @@ class _HerdScreenState extends State<HerdScreen> {
                                 Expanded(
                                   flex: 2,
                                   child: Container(
-                                    padding: const EdgeInsets.symmetric(
+                                    padding: EdgeInsets.symmetric(
                                         horizontal: 6, vertical: 2),
                                     decoration: BoxDecoration(
                                       color: AppTheme.primary.withAlpha(12),
@@ -325,7 +329,7 @@ class _HerdScreenState extends State<HerdScreen> {
                                     animal.weightKg != null
                                         ? '${animal.weightKg!.toStringAsFixed(0)} kg'
                                         : '--',
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontSize: 12,
                                       fontWeight: FontWeight.w600,
                                       color: AppTheme.textPrimary,
@@ -344,7 +348,7 @@ class _HerdScreenState extends State<HerdScreen> {
                                       Flexible(
                                         child: Text(
                                           animal.pasture,
-                                          style: const TextStyle(
+                                          style: TextStyle(
                                             fontSize: 12,
                                             color: AppTheme.textSecondary,
                                           ),
@@ -359,7 +363,7 @@ class _HerdScreenState extends State<HerdScreen> {
                                   flex: 2,
                                   child: animal.deviceId.isNotEmpty
                                       ? Container(
-                                          padding: const EdgeInsets.symmetric(
+                                          padding: EdgeInsets.symmetric(
                                               horizontal: 6, vertical: 2),
                                           decoration: BoxDecoration(
                                             color: AppTheme.primary
@@ -404,8 +408,12 @@ class _HerdScreenState extends State<HerdScreen> {
                 ],
               ),
             ),
-          ),
-        ),
+          );
+        },
+      ),
+    ),
+  ),
+),
       ],
     );
   }
@@ -467,7 +475,7 @@ class _QuickStat extends StatelessWidget {
             ),
             Text(
               label,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 10,
                 color: AppTheme.textSecondary,
               ),

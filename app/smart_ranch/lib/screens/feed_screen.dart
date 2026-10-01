@@ -48,7 +48,7 @@ class _FeedScreenState extends State<FeedScreen> {
         children: [
           // Stats strip
           Container(
-            padding: const EdgeInsets.all(10),
+            padding: EdgeInsets.all(10),
             decoration: BoxDecoration(
               color: AppTheme.card, borderRadius: BorderRadius.circular(10),
               border: Border.all(color: AppTheme.divider),
@@ -68,8 +68,8 @@ class _FeedScreenState extends State<FeedScreen> {
           // Low stock warning
           if (lowStockItems.isNotEmpty)
             Container(
-              margin: const EdgeInsets.only(top: 8),
-              padding: const EdgeInsets.all(10),
+              margin: EdgeInsets.only(top: 8),
+              padding: EdgeInsets.all(10),
               decoration: BoxDecoration(
                 color: AppTheme.thiAlert.withAlpha(12),
                 borderRadius: BorderRadius.circular(8),
@@ -81,15 +81,15 @@ class _FeedScreenState extends State<FeedScreen> {
                   Row(
                     children: [
                       Icon(Icons.warning_amber_rounded, size: 14, color: AppTheme.thiAlert),
-                      const SizedBox(width: 6),
-                      const Text('Stock Bajo — Reabastecer', style: TextStyle(
+                      SizedBox(width: 6),
+                      Text('Stock Bajo — Reabastecer', style: TextStyle(
                           color: AppTheme.thiAlert, fontWeight: FontWeight.w600, fontSize: 12)),
                     ],
                   ),
-                  const SizedBox(height: 4),
+                  SizedBox(height: 4),
                   ...lowStockItems.map((f) => Text(
                     '• ${f.name}: ${f.stockKg.toStringAsFixed(0)} ${f.unit} (mín: ${f.minStockKg.toStringAsFixed(0)})',
-                    style: const TextStyle(color: AppTheme.textSecondary, fontSize: 10),
+                    style: TextStyle(color: AppTheme.textSecondary, fontSize: 10),
                   )),
                 ],
               ),
@@ -129,24 +129,24 @@ class _FeedScreenState extends State<FeedScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.all(12),
+            padding: EdgeInsets.all(12),
             child: Row(
               children: [
                 Icon(Icons.inventory_2_rounded, size: 16, color: AppTheme.primary),
-                const SizedBox(width: 6),
-                const Text('Inventario de Insumos',
+                SizedBox(width: 6),
+                Text('Inventario de Insumos',
                     style: TextStyle(color: AppTheme.textPrimary, fontWeight: FontWeight.w600, fontSize: 13)),
               ],
             ),
           ),
-          const Divider(height: 1, color: AppTheme.divider),
+          Divider(height: 1, color: AppTheme.divider),
           ...List.generate(_feedInventory.length, (index) {
             final feed = _feedInventory[index];
             final daysLeft = feed.dailyUsageKg > 0 ? feed.stockKg / feed.dailyUsageKg : 999;
             final isLow = feed.stockKg <= feed.minStockKg;
 
             return Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
                 border: Border(bottom: BorderSide(color: AppTheme.divider.withAlpha(80))),
               ),
@@ -166,7 +166,7 @@ class _FeedScreenState extends State<FeedScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(feed.name, style: const TextStyle(
+                        Text(feed.name, style: TextStyle(
                             color: AppTheme.textPrimary, fontWeight: FontWeight.w600, fontSize: 12)),
                         Row(
                           children: [
@@ -179,9 +179,9 @@ class _FeedScreenState extends State<FeedScreen> {
                               child: Text(feed.category, style: TextStyle(
                                   color: _categoryColor(feed.category), fontSize: 9, fontWeight: FontWeight.w600)),
                             ),
-                            const SizedBox(width: 6),
+                            SizedBox(width: 6),
                             Text('\$${feed.unitCost}/${feed.unit}',
-                                style: const TextStyle(color: AppTheme.textSecondary, fontSize: 9)),
+                                style: TextStyle(color: AppTheme.textSecondary, fontSize: 9)),
                           ],
                         ),
                       ],
@@ -216,19 +216,19 @@ class _FeedScreenState extends State<FeedScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.all(12),
+            padding: EdgeInsets.all(12),
             child: Row(
               children: [
                 Icon(Icons.receipt_long_rounded, size: 16, color: AppTheme.secondary),
-                const SizedBox(width: 6),
-                const Text('Planes de Ración',
+                SizedBox(width: 6),
+                Text('Planes de Ración',
                     style: TextStyle(color: AppTheme.textPrimary, fontWeight: FontWeight.w600, fontSize: 13)),
               ],
             ),
           ),
-          const Divider(height: 1, color: AppTheme.divider),
+          Divider(height: 1, color: AppTheme.divider),
           ..._rations.map((ration) => Container(
-            padding: const EdgeInsets.all(10),
+            padding: EdgeInsets.all(10),
             decoration: BoxDecoration(
               border: Border(bottom: BorderSide(color: AppTheme.divider.withAlpha(80))),
             ),
@@ -238,33 +238,33 @@ class _FeedScreenState extends State<FeedScreen> {
                 Row(
                   children: [
                     Icon(Icons.restaurant_menu_rounded, size: 14, color: AppTheme.primary),
-                    const SizedBox(width: 6),
+                    SizedBox(width: 6),
                     Expanded(
-                      child: Text(ration.name, style: const TextStyle(
+                      child: Text(ration.name, style: TextStyle(
                           color: AppTheme.textPrimary, fontWeight: FontWeight.w600, fontSize: 12)),
                     ),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                       decoration: BoxDecoration(
                         color: AppTheme.primary.withAlpha(15),
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: Text('\$${ration.costPerDay.toStringAsFixed(0)}/cab/día',
-                          style: const TextStyle(color: AppTheme.primary, fontSize: 9, fontWeight: FontWeight.w600)),
+                          style: TextStyle(color: AppTheme.primary, fontSize: 9, fontWeight: FontWeight.w600)),
                     ),
                   ],
                 ),
-                const SizedBox(height: 3),
+                SizedBox(height: 3),
                 Text('${ration.target} (${ration.heads} cabezas)',
-                    style: const TextStyle(color: AppTheme.textSecondary, fontSize: 10)),
+                    style: TextStyle(color: AppTheme.textSecondary, fontSize: 10)),
                 const SizedBox(height: 4),
                 ...ration.items.map((item) => Padding(
-                  padding: const EdgeInsets.only(bottom: 1),
+                  padding: EdgeInsets.only(bottom: 1),
                   child: Row(
                     children: [
                       Icon(Icons.circle, size: 4, color: AppTheme.primary),
-                      const SizedBox(width: 4),
-                      Text(item, style: const TextStyle(color: AppTheme.textSecondary, fontSize: 10)),
+                      SizedBox(width: 4),
+                      Text(item, style: TextStyle(color: AppTheme.textSecondary, fontSize: 10)),
                     ],
                   ),
                 )),
@@ -278,9 +278,9 @@ class _FeedScreenState extends State<FeedScreen> {
 
   Color _categoryColor(String cat) => switch (cat) {
     'Forraje' => const Color(0xFF66BB6A),
-    'Concentrado' => const Color(0xFFFFA726),
-    'Suplemento' => const Color(0xFF42A5F5),
-    'Mineral' => const Color(0xFFAB47BC),
+    'Concentrado' => Color(0xFFFFA726),
+    'Suplemento' => Color(0xFF42A5F5),
+    'Mineral' => Color(0xFFAB47BC),
     _ => AppTheme.textSecondary,
   };
 
@@ -322,10 +322,10 @@ class _Stat extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Icon(icon, size: 16, color: color ?? AppTheme.textSecondary),
-        const SizedBox(height: 2),
+        SizedBox(height: 2),
         Text(value, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800,
             color: color ?? AppTheme.textPrimary)),
-        Text(label, style: const TextStyle(fontSize: 9, color: AppTheme.textSecondary)),
+        Text(label, style: TextStyle(fontSize: 9, color: AppTheme.textSecondary)),
       ],
     );
   }

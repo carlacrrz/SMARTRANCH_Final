@@ -85,8 +85,8 @@ class _HatoScreenState extends State<HatoScreen> {
 
   Widget _buildSearchAndFilters() {
     return Container(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-      decoration: const BoxDecoration(
+      padding: EdgeInsets.fromLTRB(16, 12, 16, 8),
+      decoration: BoxDecoration(
         color: AppTheme.surface,
         border: Border(bottom: BorderSide(color: AppTheme.divider)),
       ),
@@ -95,15 +95,15 @@ class _HatoScreenState extends State<HatoScreen> {
           // Search bar
           TextField(
             controller: _searchController,
-            style: const TextStyle(color: AppTheme.textPrimary),
+            style: TextStyle(color: AppTheme.textPrimary),
             decoration: InputDecoration(
               hintText: 'Buscar por nombre, arete o dispositivo...',
-              hintStyle: const TextStyle(color: AppTheme.textSecondary),
+              hintStyle: TextStyle(color: AppTheme.textSecondary),
               prefixIcon:
-                  const Icon(Icons.search, color: AppTheme.textSecondary),
+                  Icon(Icons.search, color: AppTheme.textSecondary),
               suffixIcon: _searchQuery.isNotEmpty
                   ? IconButton(
-                      icon: const Icon(Icons.clear,
+                      icon: Icon(Icons.clear,
                           color: AppTheme.textSecondary),
                       onPressed: () {
                         _searchController.clear();
@@ -202,7 +202,7 @@ class _HatoScreenState extends State<HatoScreen> {
 
   Widget _buildBody() {
     if (_isLoading) {
-      return const Center(
+      return Center(
         child: CircularProgressIndicator(color: AppTheme.primary),
       );
     }
@@ -211,12 +211,12 @@ class _HatoScreenState extends State<HatoScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.cloud_off, size: 64, color: AppTheme.textSecondary),
+            Icon(Icons.cloud_off, size: 64, color: AppTheme.textSecondary),
             const SizedBox(height: 16),
             Text('Error al cargar animales',
                 style: Theme.of(context).textTheme.titleLarge),
-            const SizedBox(height: 8),
-            Text(_error!, style: const TextStyle(color: AppTheme.textSecondary)),
+            SizedBox(height: 8),
+            Text(_error!, style: TextStyle(color: AppTheme.textSecondary)),
             const SizedBox(height: 16),
             ElevatedButton.icon(
               onPressed: _loadAnimals,
@@ -237,8 +237,8 @@ class _HatoScreenState extends State<HatoScreen> {
             const SizedBox(height: 16),
             Text('Sin animales registrados',
                 style: Theme.of(context).textTheme.titleLarge),
-            const SizedBox(height: 8),
-            const Text('Agrega tu primer animal con el botón +',
+            SizedBox(height: 8),
+            Text('Agrega tu primer animal con el botón +',
                 style: TextStyle(color: AppTheme.textSecondary)),
           ],
         ),
@@ -257,7 +257,7 @@ class _HatoScreenState extends State<HatoScreen> {
               padding: const EdgeInsets.only(bottom: 8, left: 4),
               child: Text(
                 '${_animals.length} animal${_animals.length == 1 ? '' : 'es'}',
-                style: const TextStyle(
+                style: TextStyle(
                     color: AppTheme.textSecondary, fontSize: 13),
               ),
             );
@@ -321,7 +321,7 @@ class _HatoScreenState extends State<HatoScreen> {
                         Expanded(
                           child: Text(
                             animal.name,
-                            style: const TextStyle(
+                            style: TextStyle(
                               color: AppTheme.textPrimary,
                               fontWeight: FontWeight.w600,
                               fontSize: 16,
@@ -352,20 +352,20 @@ class _HatoScreenState extends State<HatoScreen> {
                         if (animal.earTag != null) ...[
                           Icon(Icons.label_outline,
                               size: 14, color: AppTheme.textSecondary),
-                          const SizedBox(width: 3),
+                          SizedBox(width: 3),
                           Text(animal.earTag!,
-                              style: const TextStyle(
+                              style: TextStyle(
                                   color: AppTheme.textSecondary, fontSize: 12)),
                           const SizedBox(width: 12),
                         ],
                         Text(animal.categoryDisplay,
-                            style: const TextStyle(
+                            style: TextStyle(
                                 color: AppTheme.textSecondary, fontSize: 12)),
                         if (animal.breed != null) ...[
-                          const Text(' · ',
+                          Text(' · ',
                               style: TextStyle(color: AppTheme.textSecondary)),
                           Text(animal.breed!,
-                              style: const TextStyle(
+                              style: TextStyle(
                                   color: AppTheme.textSecondary, fontSize: 12)),
                         ],
                       ],
@@ -374,25 +374,25 @@ class _HatoScreenState extends State<HatoScreen> {
                     Row(
                       children: [
                         if (animal.weightKg != null) ...[
-                          const Icon(Icons.monitor_weight_outlined,
+                          Icon(Icons.monitor_weight_outlined,
                               size: 14, color: AppTheme.textSecondary),
-                          const SizedBox(width: 3),
+                          SizedBox(width: 3),
                           Text('${animal.weightKg!.toStringAsFixed(0)} kg',
-                              style: const TextStyle(
+                              style: TextStyle(
                                   color: AppTheme.textSecondary, fontSize: 12)),
-                          const SizedBox(width: 12),
+                          SizedBox(width: 12),
                         ],
-                        const Icon(Icons.cake_outlined,
+                        Icon(Icons.cake_outlined,
                             size: 14, color: AppTheme.textSecondary),
-                        const SizedBox(width: 3),
+                        SizedBox(width: 3),
                         Text(animal.ageDisplay,
-                            style: const TextStyle(
+                            style: TextStyle(
                                 color: AppTheme.textSecondary, fontSize: 12)),
                         if (animal.deviceId != null) ...[
-                          const Spacer(),
+                          Spacer(),
                           Icon(Icons.sensors,
                               size: 14, color: AppTheme.primary.withValues(alpha: 0.7)),
-                          const SizedBox(width: 3),
+                          SizedBox(width: 3),
                           Text('GPS',
                               style: TextStyle(
                                   color: AppTheme.primary.withValues(alpha: 0.7),
@@ -404,8 +404,8 @@ class _HatoScreenState extends State<HatoScreen> {
                   ],
                 ),
               ),
-              const SizedBox(width: 4),
-              const Icon(Icons.chevron_right, color: AppTheme.textSecondary),
+              SizedBox(width: 4),
+              Icon(Icons.chevron_right, color: AppTheme.textSecondary),
             ],
           ),
         ),
@@ -470,18 +470,18 @@ class _HatoScreenState extends State<HatoScreen> {
               // Sex selector
               Row(
                 children: [
-                  const Text('Sexo: ',
+                  Text('Sexo: ',
                       style: TextStyle(color: AppTheme.textSecondary)),
                   const SizedBox(width: 8),
                   ChoiceChip(
-                    label: const Text('Hembra'),
+                    label: Text('Hembra'),
                     selected: sex == 'female',
                     selectedColor: AppTheme.primary.withValues(alpha: 0.3),
                     onSelected: (_) => setSheetState(() => sex = 'female'),
                   ),
                   const SizedBox(width: 8),
                   ChoiceChip(
-                    label: const Text('Macho'),
+                    label: Text('Macho'),
                     selected: sex == 'male',
                     selectedColor: AppTheme.primary.withValues(alpha: 0.3),
                     onSelected: (_) => setSheetState(() => sex = 'male'),
@@ -492,7 +492,7 @@ class _HatoScreenState extends State<HatoScreen> {
               // Category selector
               Row(
                 children: [
-                  const Text('Categoría: ',
+                  Text('Categoría: ',
                       style: TextStyle(color: AppTheme.textSecondary)),
                   const SizedBox(width: 8),
                   Expanded(
@@ -563,10 +563,10 @@ class _HatoScreenState extends State<HatoScreen> {
       TextEditingController ctrl, String label, IconData icon) {
     return TextField(
       controller: ctrl,
-      style: const TextStyle(color: AppTheme.textPrimary),
+      style: TextStyle(color: AppTheme.textPrimary),
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: const TextStyle(color: AppTheme.textSecondary),
+        labelStyle: TextStyle(color: AppTheme.textSecondary),
         prefixIcon: Icon(icon, color: AppTheme.textSecondary),
         filled: true,
         fillColor: AppTheme.card,
@@ -582,7 +582,7 @@ class _HatoScreenState extends State<HatoScreen> {
       String label, String value, String current, ValueChanged<String> onTap) {
     final isSelected = current == value;
     return ChoiceChip(
-      label: Text(label, style: const TextStyle(fontSize: 12)),
+      label: Text(label, style: TextStyle(fontSize: 12)),
       selected: isSelected,
       selectedColor: AppTheme.secondary.withValues(alpha: 0.3),
       onSelected: (_) => onTap(value),
@@ -669,7 +669,7 @@ class _AnimalProfileScreenState extends State<AnimalProfileScreen>
                       children: [
                         Text(
                           animal.name,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 26,
                             fontWeight: FontWeight.bold,
                             color: AppTheme.textPrimary,
@@ -677,7 +677,7 @@ class _AnimalProfileScreenState extends State<AnimalProfileScreen>
                         ),
                         const SizedBox(width: 10),
                         Container(
-                          padding: const EdgeInsets.symmetric(
+                          padding: EdgeInsets.symmetric(
                               horizontal: 10, vertical: 4),
                           decoration: BoxDecoration(
                             color: AppTheme.primary.withValues(alpha: 0.2),
@@ -685,7 +685,7 @@ class _AnimalProfileScreenState extends State<AnimalProfileScreen>
                           ),
                           child: Text(
                             animal.categoryDisplay,
-                            style: const TextStyle(
+                            style: TextStyle(
                                 color: AppTheme.primary, fontSize: 13),
                           ),
                         ),
@@ -725,7 +725,7 @@ class _AnimalProfileScreenState extends State<AnimalProfileScreen>
           // Tab content
           SliverFillRemaining(
             child: _isLoading
-                ? const Center(
+                ? Center(
                     child:
                         CircularProgressIndicator(color: AppTheme.primary))
                 : TabBarView(
@@ -750,10 +750,10 @@ class _AnimalProfileScreenState extends State<AnimalProfileScreen>
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(icon, size: 14, color: AppTheme.textSecondary),
-          const SizedBox(width: 4),
+          SizedBox(width: 4),
           Text(text,
               style:
-                  const TextStyle(color: AppTheme.textSecondary, fontSize: 13)),
+                  TextStyle(color: AppTheme.textSecondary, fontSize: 13)),
         ],
       ),
     );
@@ -786,9 +786,9 @@ class _AnimalProfileScreenState extends State<AnimalProfileScreen>
           const SizedBox(height: 12),
           _sectionCard('Notas', [
             Padding(
-              padding: const EdgeInsets.all(12),
+              padding: EdgeInsets.all(12),
               child: Text(animal.notes!,
-                  style: const TextStyle(color: AppTheme.textSecondary)),
+                  style: TextStyle(color: AppTheme.textSecondary)),
             ),
           ]),
         ],
@@ -811,18 +811,18 @@ class _AnimalProfileScreenState extends State<AnimalProfileScreen>
           margin: const EdgeInsets.only(bottom: 8),
           child: ListTile(
             leading: Text(record.recordTypeDisplay.split(' ').first,
-                style: const TextStyle(fontSize: 24)),
+                style: TextStyle(fontSize: 24)),
             title: Text(record.productName ?? record.recordType,
-                style: const TextStyle(color: AppTheme.textPrimary)),
+                style: TextStyle(color: AppTheme.textPrimary)),
             subtitle: Text(
               '${record.dose ?? ''} · ${record.administeredBy ?? ''}',
-              style: const TextStyle(color: AppTheme.textSecondary),
+              style: TextStyle(color: AppTheme.textSecondary),
             ),
             trailing: record.recordedAt != null
                 ? Text(
                     '${record.recordedAt!.day}/${record.recordedAt!.month}',
                     style:
-                        const TextStyle(color: AppTheme.textSecondary, fontSize: 12),
+                        TextStyle(color: AppTheme.textSecondary, fontSize: 12),
                   )
                 : null,
           ),
@@ -847,19 +847,19 @@ class _AnimalProfileScreenState extends State<AnimalProfileScreen>
           margin: const EdgeInsets.only(bottom: 8),
           child: ListTile(
             leading: Text(event.eventTypeDisplay.split(' ').first,
-                style: const TextStyle(fontSize: 24)),
+                style: TextStyle(fontSize: 24)),
             title: Text(event.eventTypeDisplay,
-                style: const TextStyle(color: AppTheme.textPrimary)),
+                style: TextStyle(color: AppTheme.textPrimary)),
             subtitle: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 if (event.bullOrSemen != null)
                   Text('Toro/Semen: ${event.bullOrSemen}',
-                      style: const TextStyle(color: AppTheme.textSecondary)),
+                      style: TextStyle(color: AppTheme.textSecondary)),
                 if (event.expectedBirthDate != null)
                   Text(
                     'Parto esperado: ${event.expectedBirthDate!.day}/${event.expectedBirthDate!.month}/${event.expectedBirthDate!.year}',
-                    style: const TextStyle(color: AppTheme.thiAlert),
+                    style: TextStyle(color: AppTheme.thiAlert),
                   ),
               ],
             ),
@@ -867,7 +867,7 @@ class _AnimalProfileScreenState extends State<AnimalProfileScreen>
                 ? Text(
                     '${event.recordedAt!.day}/${event.recordedAt!.month}',
                     style:
-                        const TextStyle(color: AppTheme.textSecondary, fontSize: 12),
+                        TextStyle(color: AppTheme.textSecondary, fontSize: 12),
                   )
                 : null,
           ),
@@ -889,24 +889,24 @@ class _AnimalProfileScreenState extends State<AnimalProfileScreen>
         final w = weights[index] as Map<String, dynamic>;
         final record = WeightRecord.fromJson(w);
         return Card(
-          margin: const EdgeInsets.only(bottom: 8),
+          margin: EdgeInsets.only(bottom: 8),
           child: ListTile(
-            leading: const Icon(Icons.monitor_weight_outlined,
+            leading: Icon(Icons.monitor_weight_outlined,
                 color: AppTheme.primary, size: 28),
             title: Text('${record.weightKg.toStringAsFixed(1)} kg',
-                style: const TextStyle(
+                style: TextStyle(
                     color: AppTheme.textPrimary,
                     fontWeight: FontWeight.w600,
                     fontSize: 18)),
             subtitle: record.bodyConditionScore != null
                 ? Text('CC: ${record.bodyConditionScore}/9',
-                    style: const TextStyle(color: AppTheme.textSecondary))
+                    style: TextStyle(color: AppTheme.textSecondary))
                 : null,
             trailing: record.recordedAt != null
                 ? Text(
                     '${record.recordedAt!.day}/${record.recordedAt!.month}/${record.recordedAt!.year}',
                     style:
-                        const TextStyle(color: AppTheme.textSecondary, fontSize: 12),
+                        TextStyle(color: AppTheme.textSecondary, fontSize: 12),
                   )
                 : null,
           ),
@@ -920,10 +920,10 @@ class _AnimalProfileScreenState extends State<AnimalProfileScreen>
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(emoji, style: const TextStyle(fontSize: 48)),
-          const SizedBox(height: 12),
+          Text(emoji, style: TextStyle(fontSize: 48)),
+          SizedBox(height: 12),
           Text(message,
-              style: const TextStyle(color: AppTheme.textSecondary, fontSize: 16)),
+              style: TextStyle(color: AppTheme.textSecondary, fontSize: 16)),
         ],
       ),
     );
@@ -935,14 +935,14 @@ class _AnimalProfileScreenState extends State<AnimalProfileScreen>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
+            padding: EdgeInsets.fromLTRB(16, 14, 16, 8),
             child: Text(title,
-                style: const TextStyle(
+                style: TextStyle(
                     color: AppTheme.primary,
                     fontWeight: FontWeight.w600,
                     fontSize: 15)),
           ),
-          const Divider(color: AppTheme.divider, height: 1),
+          Divider(color: AppTheme.divider, height: 1),
           ...children,
         ],
       ),
@@ -957,9 +957,9 @@ class _AnimalProfileScreenState extends State<AnimalProfileScreen>
         children: [
           Text(label,
               style:
-                  const TextStyle(color: AppTheme.textSecondary, fontSize: 14)),
+                  TextStyle(color: AppTheme.textSecondary, fontSize: 14)),
           Text(value,
-              style: const TextStyle(
+              style: TextStyle(
                   color: AppTheme.textPrimary,
                   fontWeight: FontWeight.w500,
                   fontSize: 14)),

@@ -25,7 +25,7 @@ class StatsBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
         color: AppTheme.surfaceVariant,
         borderRadius: BorderRadius.circular(12),
@@ -37,7 +37,7 @@ class StatsBar extends StatelessWidget {
           children: [
             // Connection status
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              padding: EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
                 color: isConnected
                     ? AppTheme.thiNormal.withAlpha(20)
@@ -84,19 +84,19 @@ class StatsBar extends StatelessWidget {
               count: normalCount,
               label: 'Normal',
             ),
-            const SizedBox(width: 10),
+            SizedBox(width: 10),
             _LevelDot(
               color: AppTheme.thiAlert,
               count: alertCount,
               label: 'Alerta',
             ),
-            const SizedBox(width: 10),
+            SizedBox(width: 10),
             _LevelDot(
               color: AppTheme.thiDanger,
               count: dangerCount,
               label: 'Peligro',
             ),
-            const SizedBox(width: 10),
+            SizedBox(width: 10),
             _LevelDot(
               color: AppTheme.thiEmergency,
               count: emergencyCount,
@@ -141,7 +141,7 @@ class _StatItem extends StatelessWidget {
           children: [
             Text(
               value,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w700,
                 color: AppTheme.textPrimary,
@@ -149,7 +149,7 @@ class _StatItem extends StatelessWidget {
             ),
             Text(
               label,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 10,
                 color: AppTheme.textSecondary,
               ),

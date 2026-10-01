@@ -26,7 +26,7 @@ class _TroughCardState extends State<TroughCard> {
       onEnter: (_) => setState(() => _hovered = true),
       onExit: (_) => setState(() => _hovered = false),
       child: AnimatedContainer(
-      duration: const Duration(milliseconds: 300),
+      duration: Duration(milliseconds: 300),
       decoration: BoxDecoration(
         color: _hovered ? AppTheme.cardBright : AppTheme.card,
         borderRadius: BorderRadius.circular(12),
@@ -112,9 +112,10 @@ class _TroughCardState extends State<TroughCard> {
             const SizedBox(height: 16),
 
             // Water Level Gauge (vertical bar)
-            _WaterGauge(
-              level: reading.levelPercent,
-              height: 100,
+            Expanded(
+              child: _WaterGauge(
+                level: reading.levelPercent,
+              ),
             ),
             const SizedBox(height: 12),
 
@@ -154,9 +155,8 @@ class _TroughCardState extends State<TroughCard> {
 /// Vertical water level gauge.
 class _WaterGauge extends StatelessWidget {
   final double level; // 0-100
-  final double height;
 
-  const _WaterGauge({required this.level, required this.height});
+  const _WaterGauge({required this.level});
 
   @override
   Widget build(BuildContext context) {
@@ -169,59 +169,66 @@ class _WaterGauge extends StatelessWidget {
                 ? const Color(0xFFFFD600)
                 : const Color(0xFF00E5FF);
 
-    return SizedBox(
-      width: double.infinity,
-      height: height,
-      child: Stack(
-        children: [
-          // Background
-          Container(
-            decoration: BoxDecoration(
-              color: AppTheme.surface.withAlpha(100),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: AppTheme.divider),
-            ),
-          ),
-          // Water fill (from bottom)
-          Align(
-            alignment: Alignment.bottomCenter,
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 800),
-              curve: Curves.easeInOut,
-              width: double.infinity,
-              height: height * fraction,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    color.withAlpha(80),
-                    color.withAlpha(200),
-                  ],
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return SizedBox(
+          width: double.infinity,
+          height: constraints.maxHeight,
+          child: Stack(
+            children: [
+              // Background
+              Container(
+                decoration: BoxDecoration(
+                  color: AppTheme.surface.withAlpha(100),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: AppTheme.divider),
                 ),
-                borderRadius: BorderRadius.circular(8),
               ),
-            ),
-          ),
-          // Percentage label
-          Center(
-            child: Text(
-              '${level.toStringAsFixed(0)}%',
-              style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.w800,
-                color: AppTheme.textPrimary,
-                shadows: [
-                  Shadow(
-                    blurRadius: 4,
-                    color: Colors.black.withAlpha(120),
+              // Water fill (from bottom)
+              Align(
+                alignment: Alignment.bottomCenter,
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 800),
+                  curve: Curves.easeInOut,
+                  width: double.infinity,
+                  height: constraints.maxHeight * fraction,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        color.withAlpha(80),
+                        color.withAlpha(200),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.vertical(
+                      bottom: const Radius.circular(8),
+                      top: Radius.circular(fraction > 0.95 ? 8 : 2),
+                    ),
                   ),
-                ],
+                ),
               ),
-            ),
+              // Percentage label
+              Center(
+                child: Text(
+                  '${level.toStringAsFixed(0)}%',
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w800,
+                    color: AppTheme.textPrimary,
+                    shadows: [
+                      Shadow(
+                        blurRadius: 4,
+                        color: Colors.black.withAlpha(120),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 }

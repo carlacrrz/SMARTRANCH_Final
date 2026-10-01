@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../config/app_theme.dart';
 import '../models/ranch_models.dart';
 import '../services/ranch_api_service.dart';
+import '../services/auth_service.dart';
 import '../widgets/crud_dialogs.dart';
 
 /// Dashboard home screen — overview stats + quick actions, desktop 3-column layout.
@@ -45,7 +46,7 @@ class _DashboardHomeScreenState extends State<DashboardHomeScreen> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading || _stats == null) {
-      return const Center(child: CircularProgressIndicator(color: AppTheme.primary));
+      return Center(child: CircularProgressIndicator(color: AppTheme.primary));
     }
 
     final stats = _stats!;
@@ -63,36 +64,44 @@ class _DashboardHomeScreenState extends State<DashboardHomeScreen> {
           _buildKpiStrip(stats),
           const SizedBox(height: 12),
 
-          // 3-column desktop layout
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Left — Herd distribution + Quick actions
-              Expanded(
-                flex: 3,
-                child: Column(
+          // 2-column desktop layout or 1-column mobile (no system status)
+          LayoutBuilder(
+            builder: (context, constraints) {
+              if (constraints.maxWidth < 800) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     _buildHerdDistribution(stats),
                     const SizedBox(height: 12),
                     _buildQuickActions(),
+                    const SizedBox(height: 12),
+                    _buildActivitySummary(stats),
                   ],
-                ),
-              ),
-              const SizedBox(width: 12),
-
-              // Center — Activity summary
-              Expanded(
-                flex: 4,
-                child: _buildActivitySummary(stats),
-              ),
-              const SizedBox(width: 12),
-
-              // Right — System status
-              Expanded(
-                flex: 3,
-                child: _buildSystemStatus(),
-              ),
-            ],
+                );
+              }
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Left — Herd distribution + Quick actions
+                  Expanded(
+                    flex: 4,
+                    child: Column(
+                      children: [
+                        _buildHerdDistribution(stats),
+                        const SizedBox(height: 12),
+                        _buildQuickActions(),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  // Right — Activity summary
+                  Expanded(
+                    flex: 5,
+                    child: _buildActivitySummary(stats),
+                  ),
+                ],
+              );
+            },
           ),
         ],
       ),
@@ -102,32 +111,38 @@ class _DashboardHomeScreenState extends State<DashboardHomeScreen> {
   Widget _buildHeader() {
     final hour = DateTime.now().hour;
     final greeting = hour < 12 ? 'Buenos días' : hour < 18 ? 'Buenas tardes' : 'Buenas noches';
+    final ranchName = AuthService.currentUser?['ranch_name'] ?? 'Mi Rancho';
 
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [AppTheme.primary.withAlpha(25), AppTheme.card],
+          colors: [AppTheme.primary.withAlpha(30), AppTheme.card],
         ),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: AppTheme.primary.withAlpha(25)),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppTheme.primary.withAlpha(30)),
       ),
       child: Row(
         children: [
-          Icon(Icons.agriculture_rounded, size: 28, color: AppTheme.primary),
-          const SizedBox(width: 12),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(greeting, style: const TextStyle(
-                  color: AppTheme.textPrimary, fontWeight: FontWeight.w700, fontSize: 18)),
-              Text('Rancho Cananea — ${DateTime.now().day}/${DateTime.now().month}/${DateTime.now().year}',
-                  style: const TextStyle(color: AppTheme.textSecondary, fontSize: 12)),
-            ],
+          ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: Image.asset('assets/images/logo_icon.png', width: 42, height: 42),
           ),
-          const Spacer(),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('$greeting 👋', style: TextStyle(
+                    color: AppTheme.textPrimary, fontWeight: FontWeight.w700, fontSize: 18)),
+                const SizedBox(height: 2),
+                Text('$ranchName — ${DateTime.now().day}/${DateTime.now().month}/${DateTime.now().year}',
+                    style: TextStyle(color: AppTheme.textSecondary, fontSize: 12)),
+              ],
+            ),
+          ),
           IconButton(
-            icon: const Icon(Icons.refresh_rounded, color: AppTheme.textSecondary),
+            icon: Icon(Icons.refresh_rounded, color: AppTheme.textSecondary),
             onPressed: _loadStats,
             tooltip: 'Actualizar datos',
           ),
@@ -141,27 +156,30 @@ class _DashboardHomeScreenState extends State<DashboardHomeScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
         color: AppTheme.card,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: AppTheme.divider),
       ),
-      child: Row(
-        children: [
-          _KpiItem(icon: Icons.pets_rounded, label: 'Cabezas',
-              value: '${stats.totalActive}', color: AppTheme.primary,
-              onTap: () => widget.onNavigate?.call(3)),
-          _KpiItem(icon: Icons.notifications_active_rounded, label: 'Alertas',
-              value: '${stats.unacknowledgedAlerts}',
-              color: stats.unacknowledgedAlerts > 0 ? AppTheme.thiDanger : AppTheme.primary,
-              onTap: () => widget.onNavigate?.call(6)),
-          _KpiItem(icon: Icons.vaccines_rounded, label: 'Vacunas 7d',
-              value: '${stats.upcomingMedical7d}', color: AppTheme.thiAlert),
-          _KpiItem(icon: Icons.child_care_rounded, label: 'Partos 30d',
-              value: '${stats.expectedBirths30d}', color: AppTheme.secondary),
-          _KpiItem(icon: Icons.category_rounded, label: 'Categorías',
-              value: '${stats.animalsByCategory.length}', color: const Color(0xFFAB47BC)),
-          _KpiItem(icon: Icons.inventory_2_rounded, label: 'Activos',
-              value: '${stats.totalActive}', color: AppTheme.textSecondary),
-        ],
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: [
+            _KpiItem(icon: Icons.pets_rounded, label: 'Cabezas',
+                value: '${stats.totalActive}', color: AppTheme.primary,
+                onTap: () => widget.onNavigate?.call(3)),
+            _KpiItem(icon: Icons.notifications_active_rounded, label: 'Alertas',
+                value: '${stats.unacknowledgedAlerts}',
+                color: stats.unacknowledgedAlerts > 0 ? AppTheme.thiDanger : AppTheme.primary,
+                onTap: () => widget.onNavigate?.call(6)),
+            _KpiItem(icon: Icons.vaccines_rounded, label: 'Vacunas 7d',
+                value: '${stats.upcomingMedical7d}', color: AppTheme.thiAlert),
+            _KpiItem(icon: Icons.child_care_rounded, label: 'Partos 30d',
+                value: '${stats.expectedBirths30d}', color: AppTheme.secondary),
+            _KpiItem(icon: Icons.category_rounded, label: 'Categorías',
+                value: '${stats.animalsByCategory.length}', color: const Color(0xFFAB47BC)),
+            _KpiItem(icon: Icons.inventory_2_rounded, label: 'Activos',
+                value: '${stats.totalActive}', color: AppTheme.textSecondary),
+          ],
+        ),
       ),
     );
   }
@@ -171,18 +189,19 @@ class _DashboardHomeScreenState extends State<DashboardHomeScreen> {
     if (categories.isEmpty) return const SizedBox.shrink();
 
     final total = categories.values.fold<int>(0, (s, v) => s + v);
+    // Updated colors: distinct for each category
     final colorMap = {
       'vaca': AppTheme.primary,
-      'becerro': AppTheme.secondary,
-      'toro': const Color(0xFFFF7043),
-      'novilla': const Color(0xFFAB47BC),
+      'becerro': const Color(0xFF66BB6A), // Green for calves
+      'toro': const Color(0xFF7E57C2),    // Purple for bulls
+      'novilla': const Color(0xFFAB47BC), // Pink-purple for heifers
     };
 
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: AppTheme.card,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: AppTheme.divider),
       ),
       child: Column(
@@ -192,36 +211,47 @@ class _DashboardHomeScreenState extends State<DashboardHomeScreen> {
             children: [
               Icon(Icons.pie_chart_rounded, size: 16, color: AppTheme.textSecondary),
               const SizedBox(width: 6),
-              const Text('Distribución del Hato',
+              Text('Distribución del Hato',
                   style: TextStyle(color: AppTheme.textPrimary, fontWeight: FontWeight.w600, fontSize: 13)),
             ],
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 12),
           ClipRRect(
-            borderRadius: BorderRadius.circular(4),
+            borderRadius: BorderRadius.circular(6),
             child: SizedBox(
-              height: 10,
+              height: 12,
               child: Row(
                 children: categories.entries.where((e) => e.value > 0).map((e) {
                   final pct = total > 0 ? e.value / total : 0.0;
                   return Flexible(
                     flex: (pct * 100).round().clamp(1, 100),
-                    child: Container(color: colorMap[e.key] ?? AppTheme.textSecondary),
+                    child: Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 1),
+                      decoration: BoxDecoration(
+                        color: colorMap[e.key] ?? AppTheme.textSecondary,
+                        borderRadius: BorderRadius.circular(3),
+                      ),
+                    ),
                   );
                 }).toList(),
               ),
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 10),
           Wrap(
             spacing: 16,
+            runSpacing: 6,
             children: categories.entries.map((e) => Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Container(width: 8, height: 8,
-                    decoration: BoxDecoration(color: colorMap[e.key] ?? AppTheme.textSecondary, shape: BoxShape.circle)),
-                const SizedBox(width: 4),
-                Text('${e.key}: ${e.value}', style: const TextStyle(color: AppTheme.textSecondary, fontSize: 11)),
+                Container(width: 10, height: 10,
+                    decoration: BoxDecoration(
+                      color: colorMap[e.key] ?? AppTheme.textSecondary,
+                      borderRadius: BorderRadius.circular(3),
+                    )),
+                const SizedBox(width: 6),
+                Text('${_categoryLabel(e.key)}: ${e.value}',
+                    style: TextStyle(color: AppTheme.textSecondary, fontSize: 11)),
               ],
             )).toList(),
           ),
@@ -230,12 +260,20 @@ class _DashboardHomeScreenState extends State<DashboardHomeScreen> {
     );
   }
 
+  String _categoryLabel(String key) => switch (key) {
+    'vaca' => 'Vacas',
+    'becerro' => 'Becerros',
+    'toro' => 'Toros',
+    'novilla' => 'Novillas',
+    _ => key,
+  };
+
   Widget _buildQuickActions() {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: AppTheme.card,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: AppTheme.divider),
       ),
       child: Column(
@@ -245,7 +283,7 @@ class _DashboardHomeScreenState extends State<DashboardHomeScreen> {
             children: [
               Icon(Icons.bolt_rounded, size: 16, color: AppTheme.secondary),
               const SizedBox(width: 6),
-              const Text('Acciones Rápidas',
+              Text('Acciones Rápidas',
                   style: TextStyle(color: AppTheme.textPrimary, fontWeight: FontWeight.w600, fontSize: 13)),
             ],
           ),
@@ -255,7 +293,7 @@ class _DashboardHomeScreenState extends State<DashboardHomeScreen> {
             runSpacing: 6,
             children: [
               _ActionBtn(icon: Icons.add_rounded, label: 'Registrar Animal',
-                  onTap: () => showAddAnimalDialog(context)),
+                  onTap: () => widget.onNavigate?.call(12)), // Navigate to Add Animal tab
               _ActionBtn(icon: Icons.vaccines_rounded, label: 'Nueva Vacuna',
                   onTap: () => showAddMedicalDialog(context)),
               _ActionBtn(icon: Icons.monitor_weight_rounded, label: 'Registrar Peso',
@@ -276,7 +314,7 @@ class _DashboardHomeScreenState extends State<DashboardHomeScreen> {
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: AppTheme.card,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: AppTheme.divider),
       ),
       child: Column(
@@ -286,7 +324,7 @@ class _DashboardHomeScreenState extends State<DashboardHomeScreen> {
             children: [
               Icon(Icons.insights_rounded, size: 16, color: AppTheme.primary),
               const SizedBox(width: 6),
-              const Text('Resumen de Actividad',
+              Text('Resumen de Actividad',
                   style: TextStyle(color: AppTheme.textPrimary, fontWeight: FontWeight.w600, fontSize: 13)),
             ],
           ),
@@ -312,7 +350,7 @@ class _DashboardHomeScreenState extends State<DashboardHomeScreen> {
             color: stats.expectedBirths30d > 0 ? AppTheme.secondary : AppTheme.textSecondary,
             onTap: () => widget.onNavigate?.call(5),
           ),
-          const Divider(color: AppTheme.divider, height: 20),
+          Divider(color: AppTheme.divider, height: 20),
           // Status by category
           ...stats.animalsByStatus.entries.map((e) => _ActivityRow(
             icon: e.key == 'active' ? Icons.check_circle_rounded :
@@ -333,36 +371,6 @@ class _DashboardHomeScreenState extends State<DashboardHomeScreen> {
     'transferred' => 'Transferidos',
     _ => s,
   };
-
-  Widget _buildSystemStatus() {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: AppTheme.card,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: AppTheme.divider),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(Icons.dns_rounded, size: 16, color: AppTheme.textSecondary),
-              const SizedBox(width: 6),
-              const Text('Estado del Sistema',
-                  style: TextStyle(color: AppTheme.textPrimary, fontWeight: FontWeight.w600, fontSize: 13)),
-            ],
-          ),
-          const SizedBox(height: 10),
-          _StatusRow(icon: Icons.cloud_done_rounded, label: 'PostgreSQL', status: 'Conectado', ok: true),
-          _StatusRow(icon: Icons.sensors_rounded, label: 'MQTT Broker', status: 'Activo', ok: true),
-          _StatusRow(icon: Icons.storage_rounded, label: 'InfluxDB', status: 'Activo', ok: true),
-          _StatusRow(icon: Icons.dashboard_rounded, label: 'Grafana', status: ':3000', ok: true),
-          _StatusRow(icon: Icons.memory_rounded, label: 'ESP32 Collares', status: '5 online', ok: true),
-        ],
-      ),
-    );
-  }
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -378,7 +386,8 @@ class _KpiItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Expanded(
+    return SizedBox(
+      width: 100,
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(8),
@@ -390,7 +399,7 @@ class _KpiItem extends StatelessWidget {
               Icon(icon, size: 18, color: color),
               const SizedBox(height: 2),
               Text(value, style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: color)),
-              Text(label, style: const TextStyle(fontSize: 9, color: AppTheme.textSecondary)),
+              Text(label, style: TextStyle(fontSize: 9, color: AppTheme.textSecondary)),
             ],
           ),
         ),
@@ -423,7 +432,7 @@ class _ActionBtn extends StatelessWidget {
           children: [
             Icon(icon, size: 14, color: AppTheme.primary),
             const SizedBox(width: 4),
-            Text(label, style: const TextStyle(color: AppTheme.textPrimary, fontSize: 11)),
+            Text(label, style: TextStyle(color: AppTheme.textPrimary, fontSize: 11)),
           ],
         ),
       ),
@@ -450,7 +459,7 @@ class _ActivityRow extends StatelessWidget {
           children: [
             Icon(icon, size: 16, color: color),
             const SizedBox(width: 8),
-            Expanded(child: Text(label, style: const TextStyle(color: AppTheme.textPrimary, fontSize: 12))),
+            Expanded(child: Text(label, style: TextStyle(color: AppTheme.textPrimary, fontSize: 12))),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
               decoration: BoxDecoration(
@@ -461,37 +470,6 @@ class _ActivityRow extends StatelessWidget {
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-class _StatusRow extends StatelessWidget {
-  final IconData icon;
-  final String label, status;
-  final bool ok;
-
-  const _StatusRow({required this.icon, required this.label, required this.status, required this.ok});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        children: [
-          Icon(icon, size: 14, color: ok ? AppTheme.primary : AppTheme.thiDanger),
-          const SizedBox(width: 8),
-          Expanded(child: Text(label, style: const TextStyle(color: AppTheme.textPrimary, fontSize: 12))),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-            decoration: BoxDecoration(
-              color: (ok ? AppTheme.primary : AppTheme.thiDanger).withAlpha(20),
-              borderRadius: BorderRadius.circular(6),
-            ),
-            child: Text(status, style: TextStyle(
-                color: ok ? AppTheme.primary : AppTheme.thiDanger, fontSize: 10, fontWeight: FontWeight.w600)),
-          ),
-        ],
       ),
     );
   }

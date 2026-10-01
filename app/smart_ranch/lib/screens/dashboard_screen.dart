@@ -89,14 +89,16 @@ class DashboardScreen extends StatelessWidget {
                               ? 4
                               : constraints.maxWidth > 800
                                   ? 3
-                                  : 2;
+                                  : constraints.maxWidth > 600
+                                      ? 2
+                                      : 1;
                           return GridView.builder(
                             gridDelegate:
-                                SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: crossAxisCount,
+                                const SliverGridDelegateWithMaxCrossAxisExtent(
+                              maxCrossAxisExtent: 300,
                               mainAxisSpacing: 12,
                               crossAxisSpacing: 12,
-                              childAspectRatio: 0.88,
+                              mainAxisExtent: 360,
                             ),
                             itemCount: animals.length,
                             itemBuilder: (context, index) {

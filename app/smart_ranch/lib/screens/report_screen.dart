@@ -18,10 +18,10 @@ class ReportScreen extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Header
-            const Text('📊 Reportes', style: TextStyle(
+            Text('📊 Reportes', style: TextStyle(
                 color: AppTheme.textPrimary, fontWeight: FontWeight.w700, fontSize: 22)),
-            const SizedBox(height: 4),
-            const Text('Genera y descarga reportes del rancho.',
+            SizedBox(height: 4),
+            Text('Genera y descarga reportes del rancho.',
                 style: TextStyle(color: AppTheme.textSecondary, fontSize: 13)),
             const SizedBox(height: 24),
 
@@ -59,7 +59,7 @@ class ReportScreen extends StatelessWidget {
 
             // Footer tip
             Container(
-              padding: const EdgeInsets.all(12),
+              padding: EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: AppTheme.surface,
                 borderRadius: BorderRadius.circular(10),
@@ -69,7 +69,7 @@ class ReportScreen extends StatelessWidget {
                 children: [
                   Icon(Icons.lightbulb_outline, color: AppTheme.secondary, size: 20),
                   const SizedBox(width: 8),
-                  const Expanded(
+                  Expanded(
                     child: Text(
                       'Tip: Los reportes HTML pueden imprimirse como PDF con Ctrl+P → Guardar como PDF.',
                       style: TextStyle(color: AppTheme.textSecondary, fontSize: 12),
@@ -102,7 +102,7 @@ class _ReportCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppTheme.card,
         borderRadius: BorderRadius.circular(12),
@@ -124,10 +124,10 @@ class _ReportCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: const TextStyle(
+                Text(title, style: TextStyle(
                     color: AppTheme.textPrimary, fontWeight: FontWeight.w600, fontSize: 14)),
-                const SizedBox(height: 4),
-                Text(description, style: const TextStyle(
+                SizedBox(height: 4),
+                Text(description, style: TextStyle(
                     color: AppTheme.textSecondary, fontSize: 12)),
                 const SizedBox(height: 10),
                 Wrap(
@@ -137,7 +137,7 @@ class _ReportCard extends StatelessWidget {
                     return GestureDetector(
                       onTap: available ? () => _openReport(context, f) : null,
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        padding: EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                         decoration: BoxDecoration(
                           color: available
                               ? AppTheme.primary.withValues(alpha: 0.15)

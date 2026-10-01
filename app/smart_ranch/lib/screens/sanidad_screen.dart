@@ -86,25 +86,46 @@ class _SanidadScreenState extends State<SanidadScreen>
   Widget build(BuildContext context) {
     final healthAlerts = widget.demoService?.activeHealthAlerts ?? {};
 
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // LEFT — IoT Health Alerts
-        SizedBox(
-          width: 280,
-          child: _buildHealthAlertsPanel(healthAlerts),
-        ),
-        const SizedBox(width: 8),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (constraints.maxWidth < 800) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // LEFT — IoT Health Alerts
+              SizedBox(
+                height: 260,
+                child: _buildHealthAlertsPanel(healthAlerts, isMobile: true),
+              ),
+              const SizedBox(height: 12),
+              // RIGHT — Medical Records
+              Expanded(child: _buildRecordsPanel()),
+            ],
+          );
+        }
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // LEFT — IoT Health Alerts
+            SizedBox(
+              width: 280,
+              child: _buildHealthAlertsPanel(healthAlerts, isMobile: false),
+            ),
+            const SizedBox(width: 8),
 
-        // RIGHT — Medical Records
-        Expanded(child: _buildRecordsPanel()),
-      ],
+            // RIGHT — Medical Records
+            Expanded(child: _buildRecordsPanel()),
+          ],
+        );
+      },
     );
   }
 
-  Widget _buildHealthAlertsPanel(Map<String, HealthAlert> alerts) {
+  Widget _buildHealthAlertsPanel(Map<String, HealthAlert> alerts, {bool isMobile = false}) {
     return Container(
-      margin: const EdgeInsets.fromLTRB(16, 12, 0, 12),
+      margin: isMobile 
+          ? EdgeInsets.fromLTRB(12, 12, 12, 0)
+          : EdgeInsets.fromLTRB(16, 12, 0, 12),
       decoration: BoxDecoration(
         color: AppTheme.card,
         borderRadius: BorderRadius.circular(10),
@@ -115,15 +136,15 @@ class _SanidadScreenState extends State<SanidadScreen>
         children: [
           // Header
           Container(
-            padding: const EdgeInsets.all(12),
+            padding: EdgeInsets.all(12),
             decoration: BoxDecoration(
               border: Border(bottom: BorderSide(color: AppTheme.divider)),
             ),
             child: Row(
               children: [
                 Icon(Icons.monitor_heart_rounded, size: 16, color: AppTheme.thiDanger),
-                const SizedBox(width: 6),
-                const Text('Alertas IoT Salud',
+                SizedBox(width: 6),
+                Text('Alertas IoT Salud',
                     style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
                 const Spacer(),
                 Container(
@@ -140,8 +161,8 @@ class _SanidadScreenState extends State<SanidadScreen>
           // Upcoming banner
           if (_upcoming.isNotEmpty)
             Container(
-              margin: const EdgeInsets.all(8),
-              padding: const EdgeInsets.all(8),
+              margin: EdgeInsets.all(8),
+              padding: EdgeInsets.all(8),
               decoration: BoxDecoration(
                 color: AppTheme.secondary.withAlpha(12),
                 borderRadius: BorderRadius.circular(6),
@@ -153,15 +174,15 @@ class _SanidadScreenState extends State<SanidadScreen>
                   Row(
                     children: [
                       Icon(Icons.schedule_rounded, size: 12, color: AppTheme.secondary),
-                      const SizedBox(width: 4),
+                      SizedBox(width: 4),
                       Text('${_upcoming.length} evento(s) próximos',
                           style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: AppTheme.secondary)),
                     ],
                   ),
-                  const SizedBox(height: 4),
+                  SizedBox(height: 4),
                   ..._upcoming.take(3).map((u) => Text(
                     '${u['animal_name'] ?? ''} — ${u['product_name'] ?? ''}',
-                    style: const TextStyle(fontSize: 9, color: AppTheme.textSecondary),
+                    style: TextStyle(fontSize: 9, color: AppTheme.textSecondary),
                     maxLines: 1, overflow: TextOverflow.ellipsis,
                   )),
                 ],
@@ -177,10 +198,10 @@ class _SanidadScreenState extends State<SanidadScreen>
                       children: [
                         Icon(Icons.check_circle_outline_rounded, size: 32,
                             color: AppTheme.primary.withAlpha(80)),
-                        const SizedBox(height: 8),
-                        const Text('Sin alertas de salud',
+                        SizedBox(height: 8),
+                        Text('Sin alertas de salud',
                             style: TextStyle(fontSize: 12, color: AppTheme.textSecondary)),
-                        const SizedBox(height: 4),
+                        SizedBox(height: 4),
                         Text('Monitoreando temp + actividad...',
                             style: TextStyle(fontSize: 10, color: AppTheme.textSecondary.withAlpha(120))),
                       ],
@@ -220,28 +241,28 @@ class _SanidadScreenState extends State<SanidadScreen>
                             Row(
                               children: [
                                 Icon(alertIcon, size: 14, color: alertColor),
-                                const SizedBox(width: 4),
+                                SizedBox(width: 4),
                                 Expanded(
                                   child: Text(alert.animalName.isNotEmpty ? alert.animalName : alert.deviceId,
-                                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
+                                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
                                 ),
                               ],
                             ),
                             const SizedBox(height: 4),
                             Text(alertLabel,
                                 style: TextStyle(fontSize: 10, color: alertColor, fontWeight: FontWeight.w500)),
-                            const SizedBox(height: 2),
+                            SizedBox(height: 2),
                             Row(
                               children: [
-                                const Icon(Icons.thermostat_rounded, size: 10, color: AppTheme.textSecondary),
-                                const SizedBox(width: 2),
+                                Icon(Icons.thermostat_rounded, size: 10, color: AppTheme.textSecondary),
+                                SizedBox(width: 2),
                                 Text('${alert.bodyTemp.toStringAsFixed(1)}°C',
-                                    style: const TextStyle(fontSize: 9, color: AppTheme.textSecondary)),
-                                const SizedBox(width: 8),
-                                const Icon(Icons.directions_walk_rounded, size: 10, color: AppTheme.textSecondary),
-                                const SizedBox(width: 2),
+                                    style: TextStyle(fontSize: 9, color: AppTheme.textSecondary)),
+                                SizedBox(width: 8),
+                                Icon(Icons.directions_walk_rounded, size: 10, color: AppTheme.textSecondary),
+                                SizedBox(width: 2),
                                 Text('Mov: ${alert.movementIntensity.toStringAsFixed(1)}',
-                                    style: const TextStyle(fontSize: 9, color: AppTheme.textSecondary)),
+                                    style: TextStyle(fontSize: 9, color: AppTheme.textSecondary)),
                               ],
                             ),
                           ],
@@ -257,7 +278,7 @@ class _SanidadScreenState extends State<SanidadScreen>
 
   Widget _buildRecordsPanel() {
     return Container(
-      margin: const EdgeInsets.fromLTRB(0, 12, 16, 12),
+      margin: EdgeInsets.fromLTRB(0, 12, 16, 12),
       decoration: BoxDecoration(
         color: AppTheme.card,
         borderRadius: BorderRadius.circular(10),
@@ -281,7 +302,7 @@ class _SanidadScreenState extends State<SanidadScreen>
           ),
           Expanded(
             child: _isLoading
-                ? const Center(child: CircularProgressIndicator(color: AppTheme.primary))
+                ? Center(child: CircularProgressIndicator(color: AppTheme.primary))
                 : TabBarView(
                     controller: _tabController,
                     children: [
@@ -307,8 +328,8 @@ class _SanidadScreenState extends State<SanidadScreen>
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(icon, size: 40, color: AppTheme.textSecondary.withAlpha(80)),
-            const SizedBox(height: 12),
-            const Text('Sin registros', style: TextStyle(color: AppTheme.textSecondary, fontSize: 14)),
+            SizedBox(height: 12),
+            Text('Sin registros', style: TextStyle(color: AppTheme.textSecondary, fontSize: 14)),
           ],
         ),
       );
@@ -325,8 +346,8 @@ class _SanidadScreenState extends State<SanidadScreen>
             : Icons.bug_report_rounded;
 
         return Container(
-          margin: const EdgeInsets.only(bottom: 6),
-          padding: const EdgeInsets.all(12),
+          margin: EdgeInsets.only(bottom: 6),
+          padding: EdgeInsets.all(12),
           decoration: BoxDecoration(
             color: AppTheme.surface,
             borderRadius: BorderRadius.circular(8),
@@ -338,14 +359,14 @@ class _SanidadScreenState extends State<SanidadScreen>
               Row(
                 children: [
                   Icon(typeIcon, size: 16, color: AppTheme.primary),
-                  const SizedBox(width: 8),
+                  SizedBox(width: 8),
                   Expanded(
                     child: Text(record.productName ?? record.recordType,
-                        style: const TextStyle(color: AppTheme.textPrimary, fontWeight: FontWeight.w600, fontSize: 13)),
+                        style: TextStyle(color: AppTheme.textPrimary, fontWeight: FontWeight.w600, fontSize: 13)),
                   ),
                   if (record.cost != null)
                     Text('\$${record.cost!.toStringAsFixed(0)}',
-                        style: const TextStyle(color: AppTheme.primary, fontWeight: FontWeight.w600, fontSize: 12)),
+                        style: TextStyle(color: AppTheme.primary, fontWeight: FontWeight.w600, fontSize: 12)),
                 ],
               ),
               const SizedBox(height: 6),
@@ -353,21 +374,21 @@ class _SanidadScreenState extends State<SanidadScreen>
                 children: [
                   if (record.dose != null) ...[
                     Icon(Icons.medication_liquid_rounded, size: 12, color: AppTheme.textSecondary),
-                    const SizedBox(width: 3),
-                    Text(record.dose!, style: const TextStyle(color: AppTheme.textSecondary, fontSize: 11)),
-                    const SizedBox(width: 12),
+                    SizedBox(width: 3),
+                    Text(record.dose!, style: TextStyle(color: AppTheme.textSecondary, fontSize: 11)),
+                    SizedBox(width: 12),
                   ],
                   if (record.administeredBy != null) ...[
                     Icon(Icons.person_outline_rounded, size: 12, color: AppTheme.textSecondary),
-                    const SizedBox(width: 3),
-                    Text(record.administeredBy!, style: const TextStyle(color: AppTheme.textSecondary, fontSize: 11)),
+                    SizedBox(width: 3),
+                    Text(record.administeredBy!, style: TextStyle(color: AppTheme.textSecondary, fontSize: 11)),
                   ],
                 ],
               ),
               if (record.withdrawalDays > 0) ...[
                 const SizedBox(height: 4),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
                     color: AppTheme.thiAlert.withAlpha(20),
                     borderRadius: BorderRadius.circular(4),
@@ -376,21 +397,21 @@ class _SanidadScreenState extends State<SanidadScreen>
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(Icons.warning_amber_rounded, size: 10, color: AppTheme.thiAlert),
-                      const SizedBox(width: 3),
+                      SizedBox(width: 3),
                       Text('Retiro: ${record.withdrawalDays} días',
-                          style: const TextStyle(color: AppTheme.thiAlert, fontSize: 10, fontWeight: FontWeight.w600)),
+                          style: TextStyle(color: AppTheme.thiAlert, fontSize: 10, fontWeight: FontWeight.w600)),
                     ],
                   ),
                 ),
               ],
               if (record.nextDueDate != null) ...[
-                const SizedBox(height: 4),
+                SizedBox(height: 4),
                 Row(
                   children: [
                     Icon(Icons.event_rounded, size: 12, color: AppTheme.secondary),
-                    const SizedBox(width: 3),
+                    SizedBox(width: 3),
                     Text('Próximo: ${record.nextDueDate!.day}/${record.nextDueDate!.month}/${record.nextDueDate!.year}',
-                        style: const TextStyle(color: AppTheme.secondary, fontSize: 10)),
+                        style: TextStyle(color: AppTheme.secondary, fontSize: 10)),
                   ],
                 ),
               ],
@@ -399,7 +420,7 @@ class _SanidadScreenState extends State<SanidadScreen>
                 Align(
                   alignment: Alignment.centerRight,
                   child: Text('${record.recordedAt!.day}/${record.recordedAt!.month}/${record.recordedAt!.year}',
-                      style: const TextStyle(color: AppTheme.textSecondary, fontSize: 9)),
+                      style: TextStyle(color: AppTheme.textSecondary, fontSize: 9)),
                 ),
               ],
             ],

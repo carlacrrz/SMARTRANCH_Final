@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import '../config/app_theme.dart';
 import '../services/auth_service.dart';
+import 'register_screen.dart';
 
-/// Login screen with brand identity, login form, and demo mode.
+/// Login screen with brand identity, login form, registration, and demo mode.
 class LoginScreen extends StatefulWidget {
   final VoidCallback onAuthenticated;
   const LoginScreen({super.key, required this.onAuthenticated});
@@ -15,6 +16,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isLoading = false;
+  bool _obscurePassword = true;
   String? _error;
   late AnimationController _animController;
   late Animation<double> _fadeAnim;
@@ -60,6 +62,17 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
     widget.onAuthenticated();
   }
 
+  void _goToRegister() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => RegisterScreen(
+          onRegistered: widget.onAuthenticated,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -67,139 +80,210 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
       body: Center(
         child: FadeTransition(
           opacity: _fadeAnim,
-          child: Container(
-            width: 400,
-            padding: const EdgeInsets.all(32),
-            decoration: BoxDecoration(
-              color: AppTheme.card,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: AppTheme.divider),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.3),
-                  blurRadius: 40,
-                  offset: const Offset(0, 10),
-                ),
-              ],
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Brand
-                Container(
-                  width: 64, height: 64,
-                  decoration: BoxDecoration(
-                    color: AppTheme.primary.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(16),
+          child: SingleChildScrollView(
+            child: Container(
+              constraints: const BoxConstraints(maxWidth: 400),
+              margin: const EdgeInsets.symmetric(horizontal: 24),
+              padding: const EdgeInsets.all(32),
+              decoration: BoxDecoration(
+                color: AppTheme.card,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: AppTheme.divider),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.3),
+                    blurRadius: 40,
+                    offset: const Offset(0, 10),
                   ),
-                  child: const Icon(Icons.agriculture_rounded, color: AppTheme.primary, size: 36),
-                ),
-                const SizedBox(height: 16),
-                const Text('Smart Ranch', style: TextStyle(
-                    color: AppTheme.textPrimary, fontWeight: FontWeight.w700, fontSize: 24)),
-                const SizedBox(height: 4),
-                const Text('Ganadería Inteligente — Cananea', style: TextStyle(
-                    color: AppTheme.textSecondary, fontSize: 13)),
-                const SizedBox(height: 28),
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Logo (ya contiene el nombre "Smart Ranch")
+                  Image.asset('assets/images/logo.png', width: 120, height: 120),
+                  const SizedBox(height: 8),
+                  Text('Ganadería Inteligente', style: TextStyle(
+                      color: AppTheme.textSecondary, fontSize: 14)),
+                  const SizedBox(height: 28),
 
-                // Username
-                TextField(
-                  controller: _usernameController,
-                  style: const TextStyle(color: AppTheme.textPrimary, fontSize: 14),
-                  decoration: InputDecoration(
-                    labelText: 'Usuario',
-                    labelStyle: const TextStyle(color: AppTheme.textSecondary, fontSize: 13),
-                    prefixIcon: const Icon(Icons.person_outline, color: AppTheme.textSecondary, size: 20),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                      borderSide: const BorderSide(color: AppTheme.divider),
+                  // Username
+                  TextField(
+                    controller: _usernameController,
+                    style: TextStyle(color: AppTheme.textPrimary, fontSize: 14),
+                    decoration: InputDecoration(
+                      labelText: 'Usuario',
+                      labelStyle: TextStyle(color: AppTheme.textSecondary, fontSize: 13),
+                      prefixIcon: Icon(Icons.person_outline, color: AppTheme.textSecondary, size: 20),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: BorderSide(color: AppTheme.divider),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: BorderSide(color: AppTheme.primary, width: 1.5),
+                      ),
+                      filled: true,
+                      fillColor: AppTheme.surface,
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                     ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                      borderSide: const BorderSide(color: AppTheme.primary, width: 1.5),
-                    ),
-                    filled: true,
-                    fillColor: AppTheme.surface,
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    textInputAction: TextInputAction.next,
                   ),
-                  textInputAction: TextInputAction.next,
-                ),
-                const SizedBox(height: 14),
+                  const SizedBox(height: 14),
 
-                // Password
-                TextField(
-                  controller: _passwordController,
-                  obscureText: true,
-                  style: const TextStyle(color: AppTheme.textPrimary, fontSize: 14),
-                  decoration: InputDecoration(
-                    labelText: 'Contraseña',
-                    labelStyle: const TextStyle(color: AppTheme.textSecondary, fontSize: 13),
-                    prefixIcon: const Icon(Icons.lock_outline, color: AppTheme.textSecondary, size: 20),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                      borderSide: const BorderSide(color: AppTheme.divider),
+                  // Password
+                  TextField(
+                    controller: _passwordController,
+                    obscureText: _obscurePassword,
+                    style: TextStyle(color: AppTheme.textPrimary, fontSize: 14),
+                    decoration: InputDecoration(
+                      labelText: 'Contraseña',
+                      labelStyle: TextStyle(color: AppTheme.textSecondary, fontSize: 13),
+                      prefixIcon: Icon(Icons.lock_outline, color: AppTheme.textSecondary, size: 20),
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                          color: AppTheme.textSecondary, size: 20,
+                        ),
+                        onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: BorderSide(color: AppTheme.divider),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: BorderSide(color: AppTheme.primary, width: 1.5),
+                      ),
+                      filled: true,
+                      fillColor: AppTheme.surface,
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                     ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                      borderSide: const BorderSide(color: AppTheme.primary, width: 1.5),
+                    textInputAction: TextInputAction.done,
+                    onSubmitted: (_) => _login(),
+                  ),
+                  const SizedBox(height: 8),
+
+                  // Error
+                  if (_error != null)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: Text(_error!, style: TextStyle(color: AppTheme.thiDanger, fontSize: 12)),
                     ),
-                    filled: true,
-                    fillColor: AppTheme.surface,
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  ),
-                  textInputAction: TextInputAction.done,
-                  onSubmitted: (_) => _login(),
-                ),
-                const SizedBox(height: 8),
 
-                // Error
-                if (_error != null)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: Text(_error!, style: const TextStyle(color: AppTheme.thiDanger, fontSize: 12)),
-                  ),
+                  const SizedBox(height: 8),
 
-                const SizedBox(height: 8),
-
-                // Login button
-                SizedBox(
-                  width: double.infinity,
-                  height: 44,
-                  child: ElevatedButton(
-                    onPressed: _isLoading ? null : _login,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppTheme.primary,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                      elevation: 0,
+                  // Login button
+                  SizedBox(
+                    width: double.infinity,
+                    height: 46,
+                    child: ElevatedButton(
+                      onPressed: _isLoading ? null : _login,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.primary,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        elevation: 0,
+                      ),
+                      child: _isLoading
+                          ? const SizedBox(width: 20, height: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                          : const Text('Iniciar Sesión', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
                     ),
-                    child: _isLoading
-                        ? const SizedBox(width: 20, height: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                        : const Text('Iniciar Sesión', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
                   ),
-                ),
-                const SizedBox(height: 12),
+                  const SizedBox(height: 16),
 
-                // Demo button
-                SizedBox(
-                  width: double.infinity,
-                  height: 40,
-                  child: OutlinedButton(
-                    onPressed: _enterDemoMode,
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: AppTheme.textSecondary,
-                      side: const BorderSide(color: AppTheme.divider),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  // Divider with "o"
+                  Row(
+                    children: [
+                      Expanded(child: Divider(color: AppTheme.divider)),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        child: Text('o', style: TextStyle(color: AppTheme.textSecondary, fontSize: 12)),
+                      ),
+                      Expanded(child: Divider(color: AppTheme.divider)),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Social login buttons
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () {
+                            // TODO: Implement Google Sign-In
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Inicio con Google próximamente')),
+                            );
+                          },
+                          icon: const Icon(Icons.g_mobiledata_rounded, size: 22),
+                          label: const Text('Google', style: TextStyle(fontSize: 13)),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: AppTheme.textPrimary,
+                            side: BorderSide(color: AppTheme.divider),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () {
+                            // TODO: Implement Apple Sign-In
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Inicio con Apple próximamente')),
+                            );
+                          },
+                          icon: const Icon(Icons.apple_rounded, size: 20),
+                          label: const Text('Apple', style: TextStyle(fontSize: 13)),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: AppTheme.textPrimary,
+                            side: BorderSide(color: AppTheme.divider),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+
+                  // Register button
+                  SizedBox(
+                    width: double.infinity,
+                    height: 44,
+                    child: OutlinedButton(
+                      onPressed: _goToRegister,
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppTheme.primary,
+                        side: BorderSide(color: AppTheme.primary.withAlpha(100)),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      ),
+                      child: const Text('Crear Cuenta Nueva', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
                     ),
-                    child: const Text('Modo Demo (sin servidor)', style: TextStyle(fontSize: 13)),
                   ),
-                ),
+                  const SizedBox(height: 12),
 
-                const SizedBox(height: 16),
-                Text('v2.0 — Sonora, México', style: TextStyle(
-                    color: AppTheme.textSecondary.withValues(alpha: 0.5), fontSize: 10)),
-              ],
+                  // Demo button
+                  SizedBox(
+                    width: double.infinity,
+                    height: 40,
+                    child: TextButton(
+                      onPressed: _enterDemoMode,
+                      style: TextButton.styleFrom(
+                        foregroundColor: AppTheme.textSecondary,
+                      ),
+                      child: const Text('Modo Demo (sin servidor)', style: TextStyle(fontSize: 12)),
+                    ),
+                  ),
+
+                  const SizedBox(height: 12),
+                  Text('v2.0 — Sonora, México', style: TextStyle(
+                      color: AppTheme.textSecondary.withValues(alpha: 0.5), fontSize: 10)),
+                ],
+              ),
             ),
           ),
         ),

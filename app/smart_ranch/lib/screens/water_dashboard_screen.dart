@@ -21,8 +21,8 @@ class WaterDashboardScreen extends StatelessWidget {
           children: [
             // Water Stats Bar
             Container(
-              margin: const EdgeInsets.fromLTRB(20, 12, 20, 0),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              margin: EdgeInsets.fromLTRB(20, 12, 20, 0),
+              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
                 color: AppTheme.card,
                 borderRadius: BorderRadius.circular(12),
@@ -42,7 +42,7 @@ class WaterDashboardScreen extends StatelessWidget {
                     label: 'Nivel Bajo',
                     value: '$lowCount',
                     color: lowCount > 0
-                        ? const Color(0xFFFF1744)
+                        ? Color(0xFFFF1744)
                         : AppTheme.textSecondary,
                   ),
                   _WaterStat(

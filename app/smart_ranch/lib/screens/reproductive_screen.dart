@@ -97,7 +97,7 @@ class _ReproductiveScreenState extends State<ReproductiveScreen> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const Center(
+      return Center(
         child: CircularProgressIndicator(color: AppTheme.primary),
       );
     }
@@ -117,28 +117,31 @@ class _ReproductiveScreenState extends State<ReproductiveScreen> {
       children: [
         // KPI Strip
         Container(
-          margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          margin: EdgeInsets.fromLTRB(16, 12, 16, 0),
+          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
           decoration: BoxDecoration(
             color: AppTheme.card,
             borderRadius: BorderRadius.circular(10),
             border: Border.all(color: AppTheme.divider),
           ),
-          child: Row(
-            children: [
-              _KpiChip(icon: Icons.favorite_rounded, label: 'Celos IoT',
-                  value: '${estrusAlerts.length}', color: Colors.pinkAccent),
-              _KpiChip(icon: Icons.science_rounded, label: 'Inseminaciones',
-                  value: '$inseminations', color: AppTheme.secondary),
-              _KpiChip(icon: Icons.pregnant_woman_rounded, label: 'Gestantes',
-                  value: '$pregnantCount', color: const Color(0xFFAB47BC)),
-              _KpiChip(icon: Icons.child_care_rounded, label: 'Partos',
-                  value: '$birthsCount', color: AppTheme.primary),
-              _KpiChip(icon: Icons.sensors_rounded, label: 'Celos det.',
-                  value: '$heatsCount', color: Colors.pinkAccent),
-              _KpiChip(icon: Icons.event_note_rounded, label: 'Total',
-                  value: '${_events.length}', color: AppTheme.textSecondary),
-            ],
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                _KpiChip(icon: Icons.favorite_rounded, label: 'Celos IoT',
+                    value: '${estrusAlerts.length}', color: Colors.pinkAccent),
+                _KpiChip(icon: Icons.science_rounded, label: 'Inseminaciones',
+                    value: '$inseminations', color: AppTheme.secondary),
+                _KpiChip(icon: Icons.pregnant_woman_rounded, label: 'Gestantes',
+                    value: '$pregnantCount', color: Color(0xFFAB47BC)),
+                _KpiChip(icon: Icons.child_care_rounded, label: 'Partos',
+                    value: '$birthsCount', color: AppTheme.primary),
+                _KpiChip(icon: Icons.sensors_rounded, label: 'Celos det.',
+                    value: '$heatsCount', color: Colors.pinkAccent),
+                _KpiChip(icon: Icons.event_note_rounded, label: 'Total',
+                    value: '${_events.length}', color: AppTheme.textSecondary),
+              ],
+            ),
           ),
         ),
 
@@ -146,29 +149,59 @@ class _ReproductiveScreenState extends State<ReproductiveScreen> {
 
         // 3-panel body
         Expanded(
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // LEFT — IoT Celo en tiempo real
-              Expanded(
-                flex: 3,
-                child: _buildCeloPanel(estrusAlerts, readings),
-              ),
-              const SizedBox(width: 8),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              if (constraints.maxWidth < 800) {
+                return SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // LEFT — IoT Celo en tiempo real
+                      SizedBox(
+                        height: 300,
+                        child: _buildCeloPanel(estrusAlerts, readings),
+                      ),
+                      const SizedBox(height: 12),
+                      // CENTER — Gestaciones activas
+                      SizedBox(
+                        height: 350,
+                        child: _buildGestationPanel(),
+                      ),
+                      const SizedBox(height: 12),
+                      // RIGHT — Timeline de eventos
+                      SizedBox(
+                        height: 400,
+                        child: _buildTimelinePanel(),
+                      ),
+                    ],
+                  ),
+                );
+              }
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // LEFT — IoT Celo en tiempo real
+                  Expanded(
+                    flex: 3,
+                    child: _buildCeloPanel(estrusAlerts, readings),
+                  ),
+                  const SizedBox(width: 8),
 
-              // CENTER — Gestaciones activas
-              Expanded(
-                flex: 4,
-                child: _buildGestationPanel(),
-              ),
-              const SizedBox(width: 8),
+                  // CENTER — Gestaciones activas
+                  Expanded(
+                    flex: 4,
+                    child: _buildGestationPanel(),
+                  ),
+                  const SizedBox(width: 8),
 
-              // RIGHT — Timeline de eventos
-              Expanded(
-                flex: 3,
-                child: _buildTimelinePanel(),
-              ),
-            ],
+                  // RIGHT — Timeline de eventos
+                  Expanded(
+                    flex: 3,
+                    child: _buildTimelinePanel(),
+                  ),
+                ],
+              );
+            },
           ),
         ),
       ],
@@ -182,7 +215,7 @@ class _ReproductiveScreenState extends State<ReproductiveScreen> {
     Map<String, SensorReading> readings,
   ) {
     return Container(
-      margin: const EdgeInsets.fromLTRB(16, 0, 0, 12),
+      margin: EdgeInsets.fromLTRB(16, 0, 0, 12),
       decoration: BoxDecoration(
         color: AppTheme.card,
         borderRadius: BorderRadius.circular(10),
@@ -193,14 +226,14 @@ class _ReproductiveScreenState extends State<ReproductiveScreen> {
         children: [
           // Header
           Container(
-            padding: const EdgeInsets.all(12),
+            padding: EdgeInsets.all(12),
             decoration: BoxDecoration(
               border: Border(bottom: BorderSide(color: AppTheme.divider)),
             ),
             child: Row(
               children: [
                 Icon(Icons.favorite_rounded, size: 16, color: Colors.pinkAccent),
-                const SizedBox(width: 6),
+                SizedBox(width: 6),
                 Text('Celo en Tiempo Real',
                     style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600,
                         color: AppTheme.textPrimary)),
@@ -212,7 +245,7 @@ class _ReproductiveScreenState extends State<ReproductiveScreen> {
                     color: alerts.isNotEmpty ? Colors.pinkAccent : AppTheme.textSecondary,
                   ),
                 ),
-                const SizedBox(width: 4),
+                SizedBox(width: 4),
                 Text(alerts.isNotEmpty ? '${alerts.length} activo' : 'Sin alertas',
                     style: TextStyle(fontSize: 10, color: AppTheme.textSecondary)),
               ],
@@ -226,8 +259,8 @@ class _ReproductiveScreenState extends State<ReproductiveScreen> {
                 .toList();
             if (dangerousReadings.isEmpty) return const SizedBox.shrink();
             return Container(
-              margin: const EdgeInsets.fromLTRB(8, 8, 8, 0),
-              padding: const EdgeInsets.all(8),
+              margin: EdgeInsets.fromLTRB(8, 8, 8, 0),
+              padding: EdgeInsets.all(8),
               decoration: BoxDecoration(
                 color: AppTheme.thiDanger.withAlpha(15),
                 borderRadius: BorderRadius.circular(6),
@@ -257,10 +290,10 @@ class _ReproductiveScreenState extends State<ReproductiveScreen> {
                       children: [
                         Icon(Icons.monitor_heart_outlined, size: 32,
                             color: AppTheme.textSecondary.withAlpha(80)),
-                        const SizedBox(height: 8),
+                        SizedBox(height: 8),
                         Text('Monitoreando actividad...',
                             style: TextStyle(fontSize: 12, color: AppTheme.textSecondary)),
-                        const SizedBox(height: 4),
+                        SizedBox(height: 4),
                         Text('Las alertas de celo aparecerán aquí',
                             style: TextStyle(fontSize: 10, color: AppTheme.textSecondary.withAlpha(120))),
                       ],
@@ -277,7 +310,7 @@ class _ReproductiveScreenState extends State<ReproductiveScreen> {
 
           // All cows activity summary
           Container(
-            padding: const EdgeInsets.all(10),
+            padding: EdgeInsets.all(10),
             decoration: BoxDecoration(
               border: Border(top: BorderSide(color: AppTheme.divider)),
             ),
@@ -344,7 +377,7 @@ class _ReproductiveScreenState extends State<ReproductiveScreen> {
       ..sort((a, b) => a.expectedBirthDate!.compareTo(b.expectedBirthDate!));
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color: AppTheme.card,
         borderRadius: BorderRadius.circular(10),
@@ -355,14 +388,14 @@ class _ReproductiveScreenState extends State<ReproductiveScreen> {
         children: [
           // Header
           Container(
-            padding: const EdgeInsets.all(12),
+            padding: EdgeInsets.all(12),
             decoration: BoxDecoration(
               border: Border(bottom: BorderSide(color: AppTheme.divider)),
             ),
             child: Row(
               children: [
                 Icon(Icons.calendar_month_rounded, size: 16, color: const Color(0xFFAB47BC)),
-                const SizedBox(width: 6),
+                SizedBox(width: 6),
                 Text('Gestaciones Activas',
                     style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600,
                         color: AppTheme.textPrimary)),
@@ -390,7 +423,7 @@ class _ReproductiveScreenState extends State<ReproductiveScreen> {
                       children: [
                         Icon(Icons.pregnant_woman_rounded, size: 32,
                             color: AppTheme.textSecondary.withAlpha(80)),
-                        const SizedBox(height: 8),
+                        SizedBox(height: 8),
                         Text('Sin gestaciones activas',
                             style: TextStyle(fontSize: 12, color: AppTheme.textSecondary)),
                       ],
@@ -410,8 +443,8 @@ class _ReproductiveScreenState extends State<ReproductiveScreen> {
             }).toList();
             if (summerBirths.isEmpty) return const SizedBox.shrink();
             return Container(
-              margin: const EdgeInsets.fromLTRB(8, 0, 8, 8),
-              padding: const EdgeInsets.all(8),
+              margin: EdgeInsets.fromLTRB(8, 0, 8, 8),
+              padding: EdgeInsets.all(8),
               decoration: BoxDecoration(
                 color: AppTheme.thiDanger.withAlpha(12),
                 borderRadius: BorderRadius.circular(6),
@@ -444,7 +477,7 @@ class _ReproductiveScreenState extends State<ReproductiveScreen> {
         : _events.where((e) => e.eventType == _filterType).toList();
 
     return Container(
-      margin: const EdgeInsets.fromLTRB(0, 0, 16, 12),
+      margin: EdgeInsets.fromLTRB(0, 0, 16, 12),
       decoration: BoxDecoration(
         color: AppTheme.card,
         borderRadius: BorderRadius.circular(10),
@@ -455,14 +488,14 @@ class _ReproductiveScreenState extends State<ReproductiveScreen> {
         children: [
           // Header + Filter
           Container(
-            padding: const EdgeInsets.all(12),
+            padding: EdgeInsets.all(12),
             decoration: BoxDecoration(
               border: Border(bottom: BorderSide(color: AppTheme.divider)),
             ),
             child: Row(
               children: [
                 Icon(Icons.timeline_rounded, size: 16, color: AppTheme.textSecondary),
-                const SizedBox(width: 6),
+                SizedBox(width: 6),
                 Text('Eventos',
                     style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600,
                         color: AppTheme.textPrimary)),
@@ -513,14 +546,15 @@ class _KpiChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Expanded(
+    return Container(
+      width: 80,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(icon, size: 16, color: color),
-          const SizedBox(height: 2),
+          SizedBox(height: 2),
           Text(value, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: color)),
-          Text(label, style: const TextStyle(fontSize: 9, color: AppTheme.textSecondary)),
+          Text(label, style: TextStyle(fontSize: 9, color: AppTheme.textSecondary), textAlign: TextAlign.center),
         ],
       ),
     );
@@ -584,17 +618,17 @@ class _CeloAlertCard extends StatelessWidget {
               minHeight: 4,
             ),
           ),
-          const SizedBox(height: 6),
+          SizedBox(height: 6),
           Row(
             children: [
               Icon(Icons.directions_walk_rounded, size: 12, color: AppTheme.textSecondary),
-              const SizedBox(width: 4),
+              SizedBox(width: 4),
               Text('Mov: ${alert.movementIntensity.toStringAsFixed(1)}',
                   style: TextStyle(fontSize: 10, color: AppTheme.textSecondary)),
-              const Spacer(),
+              Spacer(),
               if (reading != null) ...[
                 Icon(Icons.thermostat_rounded, size: 12, color: AppTheme.textSecondary),
-                const SizedBox(width: 2),
+                SizedBox(width: 2),
                 Text('THI: ${reading!.thi.toStringAsFixed(0)}',
                     style: TextStyle(fontSize: 10,
                         color: AppTheme.thiColor(reading!.thiLevel))),
@@ -642,8 +676,8 @@ class _GestationBar extends StatelessWidget {
     final isSummer = birthDate.month >= 6 && birthDate.month <= 9;
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(10),
+      margin: EdgeInsets.only(bottom: 10),
+      padding: EdgeInsets.all(10),
       decoration: BoxDecoration(
         color: AppTheme.surface,
         borderRadius: BorderRadius.circular(8),
@@ -731,7 +765,7 @@ class _FilterDropdown extends StatelessWidget {
       initialValue: value,
       tooltip: 'Filtrar eventos',
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+        padding: EdgeInsets.symmetric(horizontal: 8, vertical: 3),
         decoration: BoxDecoration(
           color: AppTheme.surface,
           borderRadius: BorderRadius.circular(6),
@@ -741,7 +775,7 @@ class _FilterDropdown extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(Icons.filter_list_rounded, size: 12, color: AppTheme.textSecondary),
-            const SizedBox(width: 4),
+            SizedBox(width: 4),
             Text(_types[value] ?? 'Todos',
                 style: TextStyle(fontSize: 10, color: AppTheme.textSecondary)),
           ],
@@ -771,9 +805,9 @@ class _EventCard extends StatelessWidget {
     final eventColor = switch (event.eventType) {
       'heat_detected' => Colors.pinkAccent,
       'mating' || 'artificial_insemination' => AppTheme.secondary,
-      'pregnancy_check' => const Color(0xFFAB47BC),
+      'pregnancy_check' => Color(0xFFAB47BC),
       'birth' => AppTheme.primary,
-      'weaning' => const Color(0xFF42A5F5),
+      'weaning' => Color(0xFF42A5F5),
       'abortion' => AppTheme.thiDanger,
       _ => AppTheme.textSecondary,
     };
@@ -825,8 +859,8 @@ class _EventCard extends StatelessWidget {
           // Card
           Expanded(
             child: Container(
-              margin: const EdgeInsets.only(bottom: 8),
-              padding: const EdgeInsets.all(10),
+              margin: EdgeInsets.only(bottom: 8),
+              padding: EdgeInsets.all(10),
               decoration: BoxDecoration(
                 color: AppTheme.surface,
                 borderRadius: BorderRadius.circular(8),
@@ -850,11 +884,11 @@ class _EventCard extends StatelessWidget {
                     ],
                   ),
                   if (event.bullOrSemen != null) ...[
-                    const SizedBox(height: 4),
+                    SizedBox(height: 4),
                     Row(
                       children: [
                         Icon(Icons.pets_rounded, size: 10, color: AppTheme.textSecondary),
-                        const SizedBox(width: 3),
+                        SizedBox(width: 3),
                         Expanded(
                           child: Text(event.bullOrSemen!,
                               style: TextStyle(fontSize: 10, color: AppTheme.textPrimary),
@@ -893,7 +927,7 @@ class _EventCard extends StatelessWidget {
                     ),
                   ],
                   if (event.notes != null) ...[
-                    const SizedBox(height: 4),
+                    SizedBox(height: 4),
                     Text(event.notes!,
                         style: TextStyle(fontSize: 9, color: AppTheme.textSecondary),
                         maxLines: 2, overflow: TextOverflow.ellipsis),
