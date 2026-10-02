@@ -255,10 +255,10 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                             AuthService.currentUser!['username'] = 'apple_user';
                             AuthService.currentUser!['full_name'] = 'Usuario Apple';
                             AuthService.currentUser!['email'] = 'usuario@icloud.com';
-                            AuthService.currentUser!['ranch_name'] = 'Rancho Smart';
+                            AuthService.currentUser!['ranch_name'] = 'Rancho Puerto Peñasco';
                             widget.onAuthenticated();
                           },
-                          icon: const Icon(Icons.apple_rounded, size: 20, color: Colors.white),
+                          icon: Icon(Icons.apple, size: 22, color: AppTheme.textPrimary),
                           label: const Text('Apple', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
                           style: OutlinedButton.styleFrom(
                             foregroundColor: AppTheme.textPrimary,

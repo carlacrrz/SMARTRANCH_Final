@@ -84,6 +84,36 @@ class RanchApiService {
     Animal(id: 5, name: 'Valentina', earTag: 'MX-0026-0005', deviceId: 'vaca_005', breed: 'Simmental', sex: 'female', category: 'vaca', status: 'active', weightKg: 400),
   ];
 
+  /// Initialize state for a newly registered real ranch account (Puerto Peñasco).
+  static void initNewAccountRanch({
+    required String ranchName,
+    List<String>? initialDeviceIds,
+  }) {
+    _localAnimals.clear();
+    _localMedical.clear();
+    _localWeights.clear();
+    _localReproductive.clear();
+
+    if (initialDeviceIds != null && initialDeviceIds.isNotEmpty) {
+      for (int i = 0; i < initialDeviceIds.length; i++) {
+        final devId = initialDeviceIds[i];
+        _localAnimals.add(
+          Animal(
+            id: i + 1,
+            name: 'Vaca Collar ${i + 1}',
+            earTag: 'MX-PP-${(i + 1).toString().padLeft(4, '0')}',
+            deviceId: devId,
+            breed: 'Brangus',
+            sex: 'female',
+            category: 'vaca',
+            status: 'active',
+            weightKg: 450,
+          ),
+        );
+      }
+    }
+  }
+
   static final List<MedicalRecord> _localMedical = [
     MedicalRecord(id: 1, animalId: 1, recordType: 'vaccine', productName: 'Pasturela bovina', dose: '5ml IM', administeredBy: 'Dr. Ramírez', cost: 180.0, recordedAt: DateTime.now().subtract(const Duration(days: 15))),
     MedicalRecord(id: 2, animalId: 2, recordType: 'deworming', productName: 'Ivermectina 1%', dose: '10ml SC', administeredBy: 'Dr. Ramírez', cost: 95.0, recordedAt: DateTime.now().subtract(const Duration(days: 10))),

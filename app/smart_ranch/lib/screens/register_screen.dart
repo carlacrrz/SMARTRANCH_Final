@@ -6,9 +6,10 @@ import 'package:file_picker/file_picker.dart';
 import 'package:csv/csv.dart';
 import '../config/app_theme.dart';
 import '../services/auth_service.dart';
+import '../services/ranch_api_service.dart';
 import '../widgets/nfc_scanner_dialog.dart';
 
-/// Multi-step registration screen: User data, Ranch, Map/Geofencing, Equipment.
+/// Multi-step registration screen: User data, Ranch, Map/Geofencing in Puerto Peñasco, Equipment.
 class RegisterScreen extends StatefulWidget {
   final VoidCallback onRegistered;
   const RegisterScreen({super.key, required this.onRegistered});
@@ -30,13 +31,19 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool _obscurePass = true;
 
   // Step 2 — Rancho
-  final _ranchNameCtrl = TextEditingController();
+  final _ranchNameCtrl = TextEditingController(text: 'Rancho Puerto Peñasco');
   final _stateCtrl = TextEditingController(text: 'Sonora');
-  final _municipioCtrl = TextEditingController();
+  final _municipioCtrl = TextEditingController(text: 'Puerto Peñasco');
   final _headCountCtrl = TextEditingController();
 
-  // Step 3 — Geofencing
-  final List<LatLng> _polygonPoints = [];
+  // Step 3 — Geofencing (Puerto Peñasco, Sonora)
+  static const _puertoPenascoLocation = LatLng(31.3172, -113.5377);
+  final List<LatLng> _polygonPoints = [
+    const LatLng(31.325, -113.545),
+    const LatLng(31.325, -113.525),
+    const LatLng(31.310, -113.525),
+    const LatLng(31.310, -113.545),
+  ];
   final MapController _mapController = MapController();
 
   // Step 4 — Equipos
@@ -129,50 +136,62 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   Future<void> _complete() async {
     setState(() => _loading = true);
+    final ranchName = _ranchNameCtrl.text.trim().isNotEmpty ? _ranchNameCtrl.text.trim() : 'Rancho Puerto Peñasco';
+    final email = _emailCtrl.text.trim();
+    final fullName = _nameCtrl.text.trim();
+
     try {
-      // Intentar registro en API si está disponible
-      final result = await AuthService.register(
-        username: _emailCtrl.text.trim().split('@').first,
-        email: _emailCtrl.text.trim(),
+      // Guardar configuración del rancho y geocerca real en Puerto Peñasco
+      AuthService.ranchName = ranchName;
+      AuthService.ranchLocation = _puertoPenascoLocation;
+      if (_polygonPoints.length >= 3) {
+        AuthService.geofencePolygon = List<LatLng>.from(_polygonPoints);
+      }
+
+      // Inicializar base de datos limpia con los collares reales escaneados
+      RanchApiService.initNewAccountRanch(
+        ranchName: ranchName,
+        initialDeviceIds: _deviceIds,
+      );
+
+      // Registrar o autenticar usuario
+      await AuthService.register(
+        username: email.split('@').first,
+        email: email,
         password: _passCtrl.text,
-        fullName: _nameCtrl.text.trim(),
+        fullName: fullName,
       ).timeout(const Duration(seconds: 3), onTimeout: () => null);
 
-      // Si la API no respondió o estamos en modo local, asegurar sesión activa
-      AuthService.currentUser ??= {};
-      AuthService.currentUser!['username'] = _emailCtrl.text.trim().split('@').first;
-      AuthService.currentUser!['email'] = _emailCtrl.text.trim();
-      AuthService.currentUser!['full_name'] = _nameCtrl.text.trim();
-      AuthService.currentUser!['ranch_name'] = _ranchNameCtrl.text.trim();
-      AuthService.currentUser!['phone'] = _phoneCtrl.text.trim();
-      AuthService.currentUser!['role'] = 'admin';
+      AuthService.currentUser = {
+        'username': email.split('@').first,
+        'email': email,
+        'full_name': fullName,
+        'ranch_name': ranchName,
+        'phone': _phoneCtrl.text.trim(),
+        'role': 'admin',
+      };
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('¡Bienvenido a Smart Ranch, ${_nameCtrl.text.trim()}!'),
+            content: Text('¡Bienvenido a Smart Ranch, $fullName!'),
             backgroundColor: AppTheme.primary,
           ),
         );
+        Navigator.of(context).pop(true);
         widget.onRegistered();
       }
-    } catch (e) {
-      // Fallback local garantizado para no bloquear el flujo
+    } catch (_) {
       AuthService.currentUser = {
-        'username': _emailCtrl.text.trim().split('@').first,
-        'email': _emailCtrl.text.trim(),
-        'full_name': _nameCtrl.text.trim(),
-        'ranch_name': _ranchNameCtrl.text.trim(),
+        'username': email.split('@').first,
+        'email': email,
+        'full_name': fullName,
+        'ranch_name': ranchName,
         'phone': _phoneCtrl.text.trim(),
         'role': 'admin',
       };
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('¡Cuenta creada con éxito!'),
-            backgroundColor: AppTheme.primary,
-          ),
-        );
+        Navigator.of(context).pop(true);
         widget.onRegistered();
       }
     } finally {
@@ -243,14 +262,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
             ),
           ],
         ),
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(1),
-          child: Container(color: AppTheme.divider, height: 1),
-        ),
       ),
       body: Column(
         children: [
-          // Step indicator
+          // Step indicator without black box and without percentage
           _buildStepIndicator(),
           // Content
           Expanded(child: _buildStepContent()),
@@ -261,6 +276,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
+  /// Step progress indicator without black container and without percentage tag
   Widget _buildStepIndicator() {
     final stepDetails = [
       {'title': 'Responsable', 'icon': Icons.person_outline},
@@ -270,39 +286,24 @@ class _RegisterScreenState extends State<RegisterScreen> {
     ];
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: const Color(0xFF080808),
+        color: Colors.transparent,
         border: Border(bottom: BorderSide(color: AppTheme.divider)),
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Paso ${_currentStep + 1} de 4: ${stepDetails[_currentStep]['title']}',
-                style: TextStyle(
-                  color: AppTheme.primary,
-                  fontWeight: FontWeight.w700,
-                  fontSize: 14,
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: AppTheme.primary.withAlpha(25),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppTheme.primary.withAlpha(80)),
-                ),
-                child: Text(
-                  '${((_currentStep + 1) / 4 * 100).toInt()}% completado',
-                  style: TextStyle(color: AppTheme.primary, fontSize: 11, fontWeight: FontWeight.w600),
-                ),
-              ),
-            ],
+          Text(
+            'Paso ${_currentStep + 1} de 4: ${stepDetails[_currentStep]['title']}',
+            style: const TextStyle(
+              color: AppTheme.primary,
+              fontWeight: FontWeight.w700,
+              fontSize: 14,
+            ),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 8),
+          // Clean Progress Bars
           Row(
             children: List.generate(4, (i) {
               final isDone = i < _currentStep;
@@ -311,19 +312,19 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 child: Padding(
                   padding: EdgeInsets.only(right: i < 3 ? 6.0 : 0.0),
                   child: Container(
-                    height: 5,
+                    height: 4,
                     decoration: BoxDecoration(
                       color: isDone || isCurrent
                           ? AppTheme.primary
                           : AppTheme.divider,
-                      borderRadius: BorderRadius.circular(3),
+                      borderRadius: BorderRadius.circular(2),
                     ),
                   ),
                 ),
               );
             }),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 8),
           // Clean Step Pills
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -341,38 +342,27 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   }
                 },
                 borderRadius: BorderRadius.circular(20),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: isCurrent
-                        ? AppTheme.primary.withAlpha(35)
-                        : Colors.transparent,
-                    borderRadius: BorderRadius.circular(20),
-                    border: isCurrent
-                        ? Border.all(color: AppTheme.primary, width: 1)
-                        : null,
-                  ),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(
-                        isDone ? Icons.check_circle : icon,
+                        isDone ? Icons.check_circle_rounded : icon,
                         size: 14,
-                        color: isCurrent
+                        color: isCurrent || isDone
                             ? AppTheme.primary
-                            : isDone
-                                ? AppTheme.primary
-                                : AppTheme.textSecondary,
+                            : AppTheme.textSecondary,
                       ),
                       const SizedBox(width: 4),
                       Text(
                         title,
                         style: TextStyle(
                           fontSize: 11,
-                          fontWeight: isCurrent ? FontWeight.w700 : FontWeight.w500,
+                          fontWeight: isCurrent ? FontWeight.w700 : FontWeight.normal,
                           color: isCurrent
-                              ? AppTheme.textPrimary
-                              : AppTheme.textSecondary,
+                              ? AppTheme.primary
+                              : (isDone ? AppTheme.textPrimary : AppTheme.textSecondary),
                         ),
                       ),
                     ],
@@ -388,11 +378,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   Widget _buildStepContent() {
     switch (_currentStep) {
-      case 0: return _buildStep1();
-      case 1: return _buildStep2();
-      case 2: return _buildStep3();
-      case 3: return _buildStep4();
-      default: return const SizedBox.shrink();
+      case 0:
+        return _buildStep1();
+      case 1:
+        return _buildStep2();
+      case 2:
+        return _buildStep3();
+      case 3:
+        return _buildStep4();
+      default:
+        return const SizedBox.shrink();
     }
   }
 
@@ -406,55 +401,54 @@ class _RegisterScreenState extends State<RegisterScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              Center(child: Icon(Icons.person_pin_rounded, size: 48, color: AppTheme.primary)),
+              const SizedBox(height: 12),
               Center(
-                child: Column(
-                  children: [
-                    Image.asset('assets/images/logo_icon.png', width: 75, height: 75),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Smart Ranch',
-                      style: TextStyle(
-                        color: AppTheme.textPrimary,
-                        fontWeight: FontWeight.w800,
-                        fontSize: 20,
-                      ),
-                    ),
-                  ],
+                child: Text(
+                  'Datos del Responsable',
+                  style: TextStyle(color: AppTheme.textPrimary, fontWeight: FontWeight.w700, fontSize: 18),
                 ),
               ),
-              const SizedBox(height: 16),
-              Center(child: Text('Datos del Responsable', style: TextStyle(
-                  color: AppTheme.textPrimary, fontWeight: FontWeight.w700, fontSize: 18))),
               const SizedBox(height: 20),
-              TextField(controller: _nameCtrl,
-                  style: TextStyle(color: AppTheme.textPrimary, fontSize: 14),
-                  decoration: _inputDeco('Nombre completo *', icon: Icons.person_outline)),
+              TextField(
+                controller: _nameCtrl,
+                style: TextStyle(color: AppTheme.textPrimary, fontSize: 14),
+                decoration: _inputDeco('Nombre completo *', icon: Icons.person_outline),
+              ),
               const SizedBox(height: 12),
-              TextField(controller: _emailCtrl,
-                  keyboardType: TextInputType.emailAddress,
-                  style: TextStyle(color: AppTheme.textPrimary, fontSize: 14),
-                  decoration: _inputDeco('Correo electrónico *', icon: Icons.email_outlined)),
+              TextField(
+                controller: _emailCtrl,
+                keyboardType: TextInputType.emailAddress,
+                style: TextStyle(color: AppTheme.textPrimary, fontSize: 14),
+                decoration: _inputDeco('Correo electrónico *', icon: Icons.email_outlined),
+              ),
               const SizedBox(height: 12),
-              TextField(controller: _phoneCtrl,
-                  keyboardType: TextInputType.phone,
-                  style: TextStyle(color: AppTheme.textPrimary, fontSize: 14),
-                  decoration: _inputDeco('Número de celular *', icon: Icons.phone_outlined)),
+              TextField(
+                controller: _phoneCtrl,
+                keyboardType: TextInputType.phone,
+                style: TextStyle(color: AppTheme.textPrimary, fontSize: 14),
+                decoration: _inputDeco('Número de celular *', icon: Icons.phone_outlined),
+              ),
               const SizedBox(height: 12),
-              TextField(controller: _passCtrl,
-                  obscureText: _obscurePass,
-                  style: TextStyle(color: AppTheme.textPrimary, fontSize: 14),
-                  decoration: _inputDeco('Contraseña *', icon: Icons.lock_outline).copyWith(
-                    suffixIcon: IconButton(
-                      icon: Icon(_obscurePass ? Icons.visibility_off_outlined : Icons.visibility_outlined,
-                          color: AppTheme.textSecondary, size: 18),
-                      onPressed: () => setState(() => _obscurePass = !_obscurePass),
-                    ),
-                  )),
+              TextField(
+                controller: _passCtrl,
+                obscureText: _obscurePass,
+                style: TextStyle(color: AppTheme.textPrimary, fontSize: 14),
+                decoration: _inputDeco('Contraseña *', icon: Icons.lock_outline).copyWith(
+                  suffixIcon: IconButton(
+                    icon: Icon(_obscurePass ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                        color: AppTheme.textSecondary, size: 18),
+                    onPressed: () => setState(() => _obscurePass = !_obscurePass),
+                  ),
+                ),
+              ),
               const SizedBox(height: 12),
-              TextField(controller: _confirmPassCtrl,
-                  obscureText: true,
-                  style: TextStyle(color: AppTheme.textPrimary, fontSize: 14),
-                  decoration: _inputDeco('Confirmar contraseña *', icon: Icons.lock_outline)),
+              TextField(
+                controller: _confirmPassCtrl,
+                obscureText: true,
+                style: TextStyle(color: AppTheme.textPrimary, fontSize: 14),
+                decoration: _inputDeco('Confirmar contraseña *', icon: Icons.lock_outline),
+              ),
             ],
           ),
         ),
@@ -474,33 +468,45 @@ class _RegisterScreenState extends State<RegisterScreen> {
             children: [
               Center(child: Icon(Icons.agriculture_rounded, size: 48, color: AppTheme.primary)),
               const SizedBox(height: 12),
-              Center(child: Text('Datos del Rancho', style: TextStyle(
-                  color: AppTheme.textPrimary, fontWeight: FontWeight.w700, fontSize: 18))),
+              Center(
+                child: Text(
+                  'Datos del Rancho',
+                  style: TextStyle(color: AppTheme.textPrimary, fontWeight: FontWeight.w700, fontSize: 18),
+                ),
+              ),
               const SizedBox(height: 20),
-              TextField(controller: _ranchNameCtrl,
-                  style: TextStyle(color: AppTheme.textPrimary, fontSize: 14),
-                  decoration: _inputDeco('Nombre del Rancho *', icon: Icons.home_work_outlined)),
+              TextField(
+                controller: _ranchNameCtrl,
+                style: TextStyle(color: AppTheme.textPrimary, fontSize: 14),
+                decoration: _inputDeco('Nombre del Rancho *', icon: Icons.home_work_outlined),
+              ),
               const SizedBox(height: 12),
               Row(
                 children: [
                   Expanded(
-                    child: TextField(controller: _stateCtrl,
-                        style: TextStyle(color: AppTheme.textPrimary, fontSize: 14),
-                        decoration: _inputDeco('Estado', icon: Icons.map_outlined)),
+                    child: TextField(
+                      controller: _stateCtrl,
+                      style: TextStyle(color: AppTheme.textPrimary, fontSize: 14),
+                      decoration: _inputDeco('Estado', icon: Icons.map_outlined),
+                    ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: TextField(controller: _municipioCtrl,
-                        style: TextStyle(color: AppTheme.textPrimary, fontSize: 14),
-                        decoration: _inputDeco('Municipio')),
+                    child: TextField(
+                      controller: _municipioCtrl,
+                      style: TextStyle(color: AppTheme.textPrimary, fontSize: 14),
+                      decoration: _inputDeco('Municipio'),
+                    ),
                   ),
                 ],
               ),
               const SizedBox(height: 12),
-              TextField(controller: _headCountCtrl,
-                  keyboardType: TextInputType.number,
-                  style: TextStyle(color: AppTheme.textPrimary, fontSize: 14),
-                  decoration: _inputDeco('Número de cabezas (aprox.)', icon: Icons.pets)),
+              TextField(
+                controller: _headCountCtrl,
+                keyboardType: TextInputType.number,
+                style: TextStyle(color: AppTheme.textPrimary, fontSize: 14),
+                decoration: _inputDeco('Número de cabezas (aprox.)', icon: Icons.pets),
+              ),
             ],
           ),
         ),
@@ -508,7 +514,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
-  // Step 3 — Ubicación y Geofencing
+  // Step 3 — Ubicación y Geofencing (Puerto Peñasco, Sonora)
   Widget _buildStep3() {
     return Padding(
       padding: const EdgeInsets.all(16),
@@ -517,18 +523,36 @@ class _RegisterScreenState extends State<RegisterScreen> {
         children: [
           Row(
             children: [
-              Icon(Icons.map_rounded, size: 20, color: AppTheme.primary),
+              const Icon(Icons.location_on_rounded, size: 20, color: AppTheme.primary),
               const SizedBox(width: 8),
-              Text('Delimita tu Rancho', style: TextStyle(
-                  color: AppTheme.textPrimary, fontWeight: FontWeight.w700, fontSize: 16)),
-              const Spacer(),
-              Text('${_polygonPoints.length} puntos', style: TextStyle(
-                  color: AppTheme.primary, fontWeight: FontWeight.w600, fontSize: 12)),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Delimitar Rancho — Puerto Peñasco, Sonora',
+                      style: TextStyle(color: AppTheme.textPrimary, fontWeight: FontWeight.w700, fontSize: 14),
+                    ),
+                    Text(
+                      'Toca el mapa para colocar los vértices del cerco virtual.',
+                      style: TextStyle(color: AppTheme.textSecondary, fontSize: 11),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: AppTheme.primary.withAlpha(25),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  '${_polygonPoints.length} puntos',
+                  style: const TextStyle(color: AppTheme.primary, fontWeight: FontWeight.bold, fontSize: 11),
+                ),
+              ),
             ],
           ),
-          const SizedBox(height: 4),
-          Text('Toca el mapa para colocar puntos y trazar el perímetro del rancho.',
-              style: TextStyle(color: AppTheme.textSecondary, fontSize: 12)),
           const SizedBox(height: 10),
           Expanded(
             child: ClipRRect(
@@ -538,8 +562,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   FlutterMap(
                     mapController: _mapController,
                     options: MapOptions(
-                      initialCenter: const LatLng(30.97, -110.30), // Cananea, Sonora
-                      initialZoom: 12,
+                      initialCenter: _puertoPenascoLocation,
+                      initialZoom: 13,
                       onTap: (_, point) {
                         setState(() => _polygonPoints.add(point));
                       },
@@ -554,41 +578,79 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           polygons: [
                             Polygon(
                               points: _polygonPoints,
-                              color: AppTheme.primary.withAlpha(40),
+                              color: AppTheme.primary.withAlpha(45),
                               borderColor: AppTheme.primary,
-                              borderStrokeWidth: 2,
+                              borderStrokeWidth: 2.5,
                               isFilled: true,
                             ),
                           ],
                         ),
                       MarkerLayer(
-                        markers: _polygonPoints.asMap().entries.map((e) => Marker(
-                          point: e.value,
-                          width: 20, height: 20,
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: AppTheme.primary,
-                              shape: BoxShape.circle,
-                              border: Border.all(color: Colors.white, width: 2),
-                            ),
-                            child: Center(
-                              child: Text('${e.key + 1}', style: const TextStyle(
-                                  color: Colors.white, fontSize: 8, fontWeight: FontWeight.w700)),
+                        markers: [
+                          // Ranch center
+                          Marker(
+                            point: _puertoPenascoLocation,
+                            width: 32,
+                            height: 32,
+                            child: Container(
+                              decoration: const BoxDecoration(
+                                color: AppTheme.primary,
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(Icons.home_work_rounded, color: Colors.white, size: 18),
                             ),
                           ),
-                        )).toList(),
+                          // Polygon Vertices
+                          ..._polygonPoints.asMap().entries.map((e) => Marker(
+                            point: e.value,
+                            width: 22,
+                            height: 22,
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: AppTheme.primary,
+                                shape: BoxShape.circle,
+                                border: Border.all(color: Colors.white, width: 2),
+                              ),
+                              child: Center(
+                                child: Text(
+                                  '${e.key + 1}',
+                                  style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                            ),
+                          )),
+                        ],
                       ),
                     ],
                   ),
+                  // Map Control Buttons
                   Positioned(
-                    bottom: 12, right: 12,
-                    child: FloatingActionButton.small(
-                      backgroundColor: AppTheme.thiDanger,
-                      foregroundColor: Colors.white,
-                      onPressed: _polygonPoints.isEmpty ? null : () {
-                        setState(() => _polygonPoints.clear());
-                      },
-                      child: const Icon(Icons.delete_outline, size: 18),
+                    top: 12,
+                    right: 12,
+                    child: Column(
+                      children: [
+                        FloatingActionButton.small(
+                          heroTag: 'center_map_btn',
+                          backgroundColor: AppTheme.card,
+                          foregroundColor: AppTheme.primary,
+                          onPressed: () {
+                            _mapController.move(_puertoPenascoLocation, 13.5);
+                          },
+                          tooltip: 'Centrar en Puerto Peñasco',
+                          child: const Icon(Icons.my_location_rounded, size: 18),
+                        ),
+                        const SizedBox(height: 8),
+                        FloatingActionButton.small(
+                          heroTag: 'clear_poly_btn',
+                          backgroundColor: AppTheme.thiDanger,
+                          foregroundColor: Colors.white,
+                          onPressed: _polygonPoints.isEmpty
+                              ? null
+                              : () => setState(() => _polygonPoints.clear()),
+                          tooltip: 'Limpiar polígono',
+                          child: const Icon(Icons.delete_sweep_rounded, size: 18),
+                        ),
+                      ],
                     ),
                   ),
                 ],
@@ -612,21 +674,26 @@ class _RegisterScreenState extends State<RegisterScreen> {
             children: [
               Center(child: Icon(Icons.nfc_rounded, size: 48, color: AppTheme.primary)),
               const SizedBox(height: 12),
-              Center(child: Text('Registrar Equipos', style: TextStyle(
-                  color: AppTheme.textPrimary, fontWeight: FontWeight.w700, fontSize: 18))),
+              Center(
+                child: Text('Registrar Equipos & Collares IoT',
+                    style: TextStyle(color: AppTheme.textPrimary, fontWeight: FontWeight.w700, fontSize: 18)),
+              ),
               const SizedBox(height: 4),
-              Center(child: Text('Agrega los collares inteligentes IoT de tus animales.',
-                  style: TextStyle(color: AppTheme.textSecondary, fontSize: 13))),
+              Center(
+                child: Text('Vincula los collares inteligentes o configura su WiFi.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: AppTheme.textSecondary, fontSize: 12)),
+              ),
               const SizedBox(height: 20),
 
-              // Scan NFC
+              // Scan NFC & Setup WiFi Button
               SizedBox(
                 width: double.infinity,
                 height: 44,
                 child: ElevatedButton.icon(
                   onPressed: _scanNfcDevice,
-                  icon: const Icon(Icons.wifi_tethering, size: 18),
-                  label: const Text('Escanear Collar (NFC)', style: TextStyle(fontWeight: FontWeight.w600)),
+                  icon: const Icon(Icons.nfc_rounded, size: 18),
+                  label: const Text('Escanear y Configurar WiFi (NFC)', style: TextStyle(fontWeight: FontWeight.w600)),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppTheme.primary,
                     foregroundColor: Colors.white,
@@ -652,56 +719,61 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   ),
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 18),
 
-              // Device list
-              if (_deviceIds.isNotEmpty) ...[
-                Text('${_deviceIds.length} dispositivo(s) agregado(s):',
-                    style: TextStyle(color: AppTheme.textSecondary, fontSize: 12, fontWeight: FontWeight.w600)),
-                const SizedBox(height: 8),
+              // Registered devices count
+              Text(
+                'Collares Vinculados (${_deviceIds.length}):',
+                style: TextStyle(color: AppTheme.textPrimary, fontWeight: FontWeight.w700, fontSize: 13),
+              ),
+              const SizedBox(height: 8),
+
+              if (_deviceIds.isEmpty)
                 Container(
-                  constraints: const BoxConstraints(maxHeight: 200),
-                  decoration: BoxDecoration(
-                    color: AppTheme.surface,
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: AppTheme.divider),
-                  ),
-                  child: ListView.separated(
-                    shrinkWrap: true,
-                    itemCount: _deviceIds.length,
-                    separatorBuilder: (_, __) => Divider(height: 1, color: AppTheme.divider),
-                    itemBuilder: (_, i) => ListTile(
-                      dense: true,
-                      leading: Icon(Icons.memory, size: 16, color: AppTheme.primary),
-                      title: Text(_deviceIds[i], style: TextStyle(
-                          color: AppTheme.textPrimary, fontSize: 12, fontFamily: 'monospace')),
-                      trailing: IconButton(
-                        icon: Icon(Icons.close, size: 16, color: AppTheme.textSecondary),
-                        onPressed: () => setState(() => _deviceIds.removeAt(i)),
-                      ),
-                    ),
-                  ),
-                ),
-              ] else
-                Container(
-                  padding: const EdgeInsets.all(20),
+                  padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     color: AppTheme.surface,
                     borderRadius: BorderRadius.circular(10),
                     border: Border.all(color: AppTheme.divider),
                   ),
                   child: Center(
-                    child: Column(
-                      children: [
-                        Icon(Icons.devices_other, size: 32, color: AppTheme.textSecondary.withAlpha(100)),
-                        const SizedBox(height: 8),
-                        Text('No hay dispositivos registrados aún',
-                            style: TextStyle(color: AppTheme.textSecondary, fontSize: 12)),
-                        Text('Puedes agregarlos después desde la app',
-                            style: TextStyle(color: AppTheme.textSecondary.withAlpha(150), fontSize: 11)),
-                      ],
+                    child: Text(
+                      'No hay collares vinculados aún. Puedes agregarlos ahora o más tarde desde la pantalla de Agregar Animal.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: AppTheme.textSecondary, fontSize: 12),
                     ),
                   ),
+                )
+              else
+                ListView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: _deviceIds.length,
+                  itemBuilder: (context, index) {
+                    final id = _deviceIds[index];
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 6),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: AppTheme.surface,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: AppTheme.divider),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.sensors_rounded, color: AppTheme.primary, size: 18),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(id, style: TextStyle(color: AppTheme.textPrimary, fontWeight: FontWeight.w600, fontSize: 12)),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.delete_outline, size: 18, color: AppTheme.thiDanger),
+                            onPressed: () => setState(() => _deviceIds.removeAt(index)),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
                 ),
             ],
           ),
@@ -712,51 +784,42 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   Widget _buildBottomNav() {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
       decoration: BoxDecoration(
         color: AppTheme.card,
         border: Border(top: BorderSide(color: AppTheme.divider)),
       ),
       child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           if (_currentStep > 0)
-            TextButton.icon(
+            OutlinedButton.icon(
               onPressed: _back,
-              icon: const Icon(Icons.arrow_back_rounded, size: 18),
+              icon: const Icon(Icons.arrow_back_rounded, size: 16),
               label: const Text('Atrás'),
-              style: TextButton.styleFrom(foregroundColor: AppTheme.textSecondary),
-            ),
-          const Spacer(),
-          if (_currentStep < 3)
-            ElevatedButton.icon(
-              onPressed: _next,
-              icon: const Icon(Icons.arrow_forward_rounded, size: 18),
-              label: const Text('Siguiente', style: TextStyle(fontWeight: FontWeight.w600)),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.primary,
-                foregroundColor: Colors.white,
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppTheme.textPrimary,
+                side: BorderSide(color: AppTheme.divider),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                elevation: 0,
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
               ),
             )
           else
-            ElevatedButton.icon(
-              onPressed: _loading ? null : _complete,
-              icon: _loading
-                  ? const SizedBox(width: 18, height: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                  : const Icon(Icons.check_circle_outline, size: 18),
-              label: Text(_loading ? 'Registrando...' : 'Completar Registro',
-                  style: const TextStyle(fontWeight: FontWeight.w600)),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.primary,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                elevation: 0,
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-              ),
+            const SizedBox.shrink(),
+          ElevatedButton.icon(
+            onPressed: _loading
+                ? null
+                : (_currentStep == 3 ? _complete : _next),
+            icon: _loading
+                ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                : Icon(_currentStep == 3 ? Icons.check_circle_rounded : Icons.arrow_forward_rounded, size: 16),
+            label: Text(_currentStep == 3 ? 'Completar Registro' : 'Siguiente', style: const TextStyle(fontWeight: FontWeight.bold)),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.primary,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
             ),
+          ),
         ],
       ),
     );

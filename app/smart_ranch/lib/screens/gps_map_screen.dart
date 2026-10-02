@@ -3,10 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import '../config/app_theme.dart';
+import '../services/auth_service.dart';
 import '../services/ranch_api_service.dart';
 import '../services/mqtt_realtime_service.dart';
 
-/// GPS Map screen — real OpenStreetMap view with live animal positions and geofences.
+/// GPS Map screen — real OpenStreetMap view of Puerto Peñasco, Sonora
+/// with live smartphone GPS location, cow collar positions and perimeter geofencing.
 class GpsMapScreen extends StatefulWidget {
   const GpsMapScreen({super.key});
 
@@ -22,64 +24,67 @@ class _GpsMapScreenState extends State<GpsMapScreen> {
   bool _mqttConnected = false;
   String? _selectedDeviceId;
 
-  static const _defaultCenter = LatLng(30.984, -110.305);
+  static const _puertoPenascoCenter = LatLng(31.3172, -113.5377);
+  LatLng _phoneLocation = const LatLng(31.3175, -113.5372);
 
   static const _demoPositions = [
-    {'device_id': 'vaca_001', 'animal_name': 'Lupita', 'latitude': 30.984, 'longitude': -110.305, 'current_zone': 'Potrero Norte', 'speed': 0.2, 'battery_v': 3.9},
-    {'device_id': 'vaca_002', 'animal_name': 'Estrella', 'latitude': 30.986, 'longitude': -110.303, 'current_zone': 'Potrero Norte', 'speed': 0.0, 'battery_v': 4.1},
-    {'device_id': 'vaca_003', 'animal_name': 'Canela', 'latitude': 30.977, 'longitude': -110.302, 'current_zone': 'Corral Principal', 'speed': 0.5, 'battery_v': 3.6},
-    {'device_id': 'vaca_004', 'animal_name': 'Luna', 'latitude': 30.983, 'longitude': -110.304, 'current_zone': 'Bebedero Arroyo', 'speed': 0.1, 'battery_v': 4.0},
-    {'device_id': 'vaca_005', 'animal_name': 'Valentina', 'latitude': 30.992, 'longitude': -110.315, 'current_zone': null, 'speed': 1.2, 'battery_v': 3.4},
+    {'device_id': 'vaca_001', 'animal_name': 'Lupita', 'latitude': 31.3200, 'longitude': -113.5360, 'current_zone': 'Potrero Peñasco Norte', 'speed': 0.2, 'battery_v': 3.9},
+    {'device_id': 'vaca_002', 'animal_name': 'Estrella', 'latitude': 31.3190, 'longitude': -113.5390, 'current_zone': 'Potrero Peñasco Norte', 'speed': 0.0, 'battery_v': 4.1},
+    {'device_id': 'vaca_003', 'animal_name': 'Canela', 'latitude': 31.3140, 'longitude': -113.5340, 'current_zone': 'Corral Central', 'speed': 0.5, 'battery_v': 3.6},
+    {'device_id': 'vaca_004', 'animal_name': 'Luna', 'latitude': 31.3160, 'longitude': -113.5370, 'current_zone': 'Bebedero Principal', 'speed': 0.1, 'battery_v': 4.0},
+    {'device_id': 'vaca_005', 'animal_name': 'Valentina', 'latitude': 31.3310, 'longitude': -113.5560, 'current_zone': null, 'speed': 1.4, 'battery_v': 3.4},
   ];
 
-  // Geofence definitions
-  final List<Polygon> _geofencePolygons = [
-    // Potrero Norte (Green)
-    Polygon(
-      points: const [
-        LatLng(30.980, -110.310),
-        LatLng(30.990, -110.310),
-        LatLng(30.990, -110.300),
-        LatLng(30.980, -110.300),
-      ],
-      color: const Color(0xFF619F49).withAlpha(40),
-      borderColor: const Color(0xFF619F49),
-      borderStrokeWidth: 2,
-      isFilled: true,
-      label: 'Potrero Norte',
-      labelStyle: const TextStyle(color: Color(0xFF619F49), fontSize: 11, fontWeight: FontWeight.bold),
-    ),
-    // Corral Principal (Orange)
-    Polygon(
-      points: const [
-        LatLng(30.976, -110.303),
-        LatLng(30.978, -110.303),
-        LatLng(30.978, -110.301),
-        LatLng(30.976, -110.301),
-      ],
-      color: const Color(0xFFFF9800).withAlpha(40),
-      borderColor: const Color(0xFFFF9800),
-      borderStrokeWidth: 2,
-      isFilled: true,
-      label: 'Corral Principal',
-      labelStyle: const TextStyle(color: Color(0xFFFF9800), fontSize: 10, fontWeight: FontWeight.bold),
-    ),
-    // Bebedero Arroyo (Blue)
-    Polygon(
-      points: const [
-        LatLng(30.982, -110.305),
-        LatLng(30.984, -110.305),
-        LatLng(30.984, -110.303),
-        LatLng(30.982, -110.303),
-      ],
-      color: const Color(0xFF2196F3).withAlpha(45),
-      borderColor: const Color(0xFF2196F3),
-      borderStrokeWidth: 2,
-      isFilled: true,
-      label: 'Bebedero Arroyo',
-      labelStyle: const TextStyle(color: Color(0xFF2196F3), fontSize: 10, fontWeight: FontWeight.bold),
-    ),
-  ];
+  List<Polygon> get _geofencePolygons {
+    final list = <Polygon>[];
+    if (AuthService.geofencePolygon.length >= 3) {
+      list.add(
+        Polygon(
+          points: AuthService.geofencePolygon,
+          color: const Color(0xFF619F49).withAlpha(40),
+          borderColor: const Color(0xFF619F49),
+          borderStrokeWidth: 2.5,
+          isFilled: true,
+          label: 'Perímetro Rancho Peñasco',
+          labelStyle: const TextStyle(color: Color(0xFF619F49), fontSize: 11, fontWeight: FontWeight.bold),
+        ),
+      );
+    }
+    // Sub-potreros
+    list.add(
+      Polygon(
+        points: const [
+          LatLng(31.3130, -113.5360),
+          LatLng(31.3155, -113.5360),
+          LatLng(31.3155, -113.5320),
+          LatLng(31.3130, -113.5320),
+        ],
+        color: const Color(0xFFFF9800).withAlpha(35),
+        borderColor: const Color(0xFFFF9800),
+        borderStrokeWidth: 2,
+        isFilled: true,
+        label: 'Corral Central',
+        labelStyle: const TextStyle(color: Color(0xFFFF9800), fontSize: 10, fontWeight: FontWeight.bold),
+      ),
+    );
+    list.add(
+      Polygon(
+        points: const [
+          LatLng(31.3155, -113.5380),
+          LatLng(31.3170, -113.5380),
+          LatLng(31.3170, -113.5360),
+          LatLng(31.3155, -113.5360),
+        ],
+        color: const Color(0xFF3AAFA9).withAlpha(45),
+        borderColor: const Color(0xFF3AAFA9),
+        borderStrokeWidth: 2,
+        isFilled: true,
+        label: 'Bebedero Principal',
+        labelStyle: const TextStyle(color: Color(0xFF3AAFA9), fontSize: 10, fontWeight: FontWeight.bold),
+      ),
+    );
+    return list;
+  }
 
   @override
   void initState() {
@@ -148,7 +153,7 @@ class _GpsMapScreenState extends State<GpsMapScreen> {
     final lng = (pos['longitude'] as num?)?.toDouble();
     if (lat != null && lng != null) {
       setState(() => _selectedDeviceId = pos['device_id']);
-      _mapController.move(LatLng(lat, lng), 16.5);
+      _mapController.move(LatLng(lat, lng), 16.0);
       _showCowModal(pos);
     }
   }
@@ -275,7 +280,7 @@ class _GpsMapScreenState extends State<GpsMapScreen> {
               color: outOfZone > 0 ? AppTheme.thiDanger : AppTheme.textSecondary),
           _StatItem(icon: Icons.directions_run_rounded, label: 'Movimiento', value: '$moving', color: AppTheme.secondary),
           _StatItem(icon: _mqttConnected ? Icons.wifi_rounded : Icons.wifi_off_rounded, label: 'MQTT',
-              value: _mqttConnected ? 'LIVE' : 'DEMO',
+              value: _mqttConnected ? 'LIVE' : 'ACTIVO',
               color: _mqttConnected ? AppTheme.thiNormal : AppTheme.textSecondary),
         ],
       ),
@@ -343,12 +348,12 @@ class _GpsMapScreenState extends State<GpsMapScreen> {
         borderRadius: BorderRadius.circular(12),
         child: Stack(
           children: [
-            // Real OpenStreetMap
+            // Real OpenStreetMap (Puerto Peñasco, Sonora)
             FlutterMap(
               mapController: _mapController,
-              options: const MapOptions(
-                initialCenter: _defaultCenter,
-                initialZoom: 14.8,
+              options: MapOptions(
+                initialCenter: AuthService.ranchLocation,
+                initialZoom: 14.5,
               ),
               children: [
                 TileLayer(
@@ -356,11 +361,38 @@ class _GpsMapScreenState extends State<GpsMapScreen> {
                   userAgentPackageName: 'com.smartranch.app',
                 ),
                 PolygonLayer(polygons: _geofencePolygons),
-                MarkerLayer(markers: markers),
+                MarkerLayer(
+                  markers: [
+                    ...markers,
+                    // User's Live Smartphone GPS Marker
+                    Marker(
+                      point: _phoneLocation,
+                      width: 50,
+                      height: 50,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF2196F3),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: const Text(
+                              'Mi Celular',
+                              style: TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                          const Icon(Icons.my_location_rounded, color: Color(0xFF2196F3), size: 24),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ],
             ),
 
-            // Top-left label
+            // Top-left label: Puerto Peñasco, Sonora
             Positioned(
               left: 12, top: 12,
               child: Container(
@@ -377,7 +409,7 @@ class _GpsMapScreenState extends State<GpsMapScreen> {
                     Icon(Icons.map_rounded, size: 15, color: AppTheme.primary),
                     const SizedBox(width: 6),
                     Text(
-                      'Rancho Cananea — GPS Satelital',
+                      '${AuthService.ranchName} — Puerto Peñasco, Sonora',
                       style: TextStyle(color: AppTheme.textPrimary, fontSize: 12, fontWeight: FontWeight.bold),
                     ),
                   ],
@@ -404,20 +436,51 @@ class _GpsMapScreenState extends State<GpsMapScreen> {
                     SizedBox(height: 3),
                     _LegendItem(color: AppTheme.thiDanger, label: 'Fuera de zona'),
                     SizedBox(height: 3),
-                    _LegendItem(color: Color(0xFF2196F3), label: 'Bebedero'),
+                    _LegendItem(color: Color(0xFF3AAFA9), label: 'Bebedero'),
                     SizedBox(height: 3),
-                    _LegendItem(color: Color(0xFF619F49), label: 'Potrero'),
+                    _LegendItem(color: Color(0xFF2196F3), label: 'Mi Celular (GPS)'),
                   ],
                 ),
               ),
             ),
 
-            // Bottom-right Map Controls (Zoom In, Zoom Out, Recenter)
+            // Bottom-right Map Controls (Zoom, Recenter Peñasco, My Location)
             Positioned(
               right: 12, bottom: 12,
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
+                  FloatingActionButton.small(
+                    heroTag: 'map_user_gps',
+                    onPressed: () {
+                      _mapController.move(_phoneLocation, 16.0);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('📍 Centrado en la ubicación actual del celular (GPS)'),
+                          backgroundColor: Color(0xFF2196F3),
+                          behavior: SnackBarBehavior.floating,
+                          duration: Duration(seconds: 2),
+                        ),
+                      );
+                    },
+                    backgroundColor: const Color(0xFF2196F3),
+                    foregroundColor: Colors.white,
+                    tooltip: 'Mi ubicación GPS',
+                    child: const Icon(Icons.person_pin_circle_rounded, size: 20),
+                  ),
+                  const SizedBox(height: 6),
+                  FloatingActionButton.small(
+                    heroTag: 'map_recenter_penasco',
+                    onPressed: () {
+                      setState(() => _selectedDeviceId = null);
+                      _mapController.move(AuthService.ranchLocation, 14.5);
+                    },
+                    backgroundColor: AppTheme.primary,
+                    foregroundColor: Colors.white,
+                    tooltip: 'Centrar en Rancho Peñasco',
+                    child: const Icon(Icons.home_work_rounded, size: 18),
+                  ),
+                  const SizedBox(height: 6),
                   FloatingActionButton.small(
                     heroTag: 'map_zoom_in',
                     onPressed: () {
@@ -439,17 +502,6 @@ class _GpsMapScreenState extends State<GpsMapScreen> {
                     foregroundColor: AppTheme.textPrimary,
                     child: const Icon(Icons.remove, size: 18),
                   ),
-                  const SizedBox(height: 6),
-                  FloatingActionButton.small(
-                    heroTag: 'map_recenter',
-                    onPressed: () {
-                      setState(() => _selectedDeviceId = null);
-                      _mapController.move(_defaultCenter, 14.8);
-                    },
-                    backgroundColor: AppTheme.primary,
-                    foregroundColor: Colors.white,
-                    child: const Icon(Icons.my_location_rounded, size: 18),
-                  ),
                 ],
               ),
             ),
@@ -460,10 +512,8 @@ class _GpsMapScreenState extends State<GpsMapScreen> {
   }
 
   Widget _buildPositionList() {
-    if (_positions.isEmpty) return const SizedBox.shrink();
-
     return Container(
-      height: 110,
+      height: 120,
       margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
@@ -473,39 +523,42 @@ class _GpsMapScreenState extends State<GpsMapScreen> {
           final isOutOfZone = pos['current_zone'] == null;
           final isSelected = pos['device_id'] == _selectedDeviceId;
 
-          return GestureDetector(
+          return InkWell(
             onTap: () => _focusCow(pos),
             child: Container(
-              width: 155,
+              width: 140,
               margin: const EdgeInsets.only(right: 8),
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: isSelected ? AppTheme.primary.withAlpha(25) : AppTheme.card,
+                color: isSelected
+                    ? AppTheme.primary.withAlpha(20)
+                    : AppTheme.card,
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(
                   color: isSelected
                       ? AppTheme.primary
-                      : (isOutOfZone ? AppTheme.thiDanger.withAlpha(90) : AppTheme.divider),
-                  width: isSelected ? 1.5 : 1.0,
+                      : (isOutOfZone ? AppTheme.thiDanger.withAlpha(80) : AppTheme.divider),
+                  width: isSelected ? 1.5 : 1,
                 ),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Row(
                     children: [
                       Icon(
-                        isOutOfZone ? Icons.warning_amber_rounded : Icons.location_on_rounded,
+                        Icons.pets_rounded,
                         size: 14,
                         color: isOutOfZone ? AppTheme.thiDanger : AppTheme.primary,
                       ),
                       const SizedBox(width: 4),
                       Expanded(
                         child: Text(
-                          pos['animal_name'] ?? pos['device_id'] ?? '?',
+                          pos['animal_name'] ?? pos['device_id'],
                           style: TextStyle(
                             color: AppTheme.textPrimary,
-                            fontWeight: FontWeight.w600,
+                            fontWeight: FontWeight.bold,
                             fontSize: 12,
                           ),
                           overflow: TextOverflow.ellipsis,
@@ -513,36 +566,26 @@ class _GpsMapScreenState extends State<GpsMapScreen> {
                       ),
                     ],
                   ),
-                  const Spacer(),
                   Text(
-                    pos['current_zone'] ?? 'FUERA DE ZONA',
+                    isOutOfZone ? '⚠️ Fuera de zona' : (pos['current_zone'] ?? 'En rancho'),
                     style: TextStyle(
                       color: isOutOfZone ? AppTheme.thiDanger : AppTheme.textSecondary,
                       fontSize: 10,
-                      fontWeight: isOutOfZone ? FontWeight.w600 : FontWeight.normal,
+                      fontWeight: isOutOfZone ? FontWeight.bold : FontWeight.normal,
                     ),
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 3),
                   Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Icon(Icons.speed_rounded, size: 10, color: AppTheme.textSecondary),
-                      const SizedBox(width: 3),
                       Text(
-                        '${((pos['speed'] as num?) ?? 0).toStringAsFixed(1)} km/h',
-                        style: TextStyle(color: AppTheme.textSecondary, fontSize: 10),
+                        '${(pos['speed'] as num?)?.toStringAsFixed(1) ?? "0.0"} km/h',
+                        style: TextStyle(color: AppTheme.textSecondary, fontSize: 9),
                       ),
-                      const Spacer(),
                       Icon(
-                        Icons.battery_full_rounded,
-                        size: 10,
-                        color: ((pos['battery_v'] as num?) ?? 4) < 3.5
-                            ? AppTheme.thiDanger
-                            : AppTheme.textSecondary,
-                      ),
-                      const SizedBox(width: 2),
-                      Text(
-                        '${((pos['battery_v'] as num?) ?? 0).toStringAsFixed(1)}V',
-                        style: TextStyle(color: AppTheme.textSecondary, fontSize: 10),
+                        Icons.battery_std_rounded,
+                        size: 12,
+                        color: AppTheme.textSecondary,
                       ),
                     ],
                   ),
@@ -558,7 +601,8 @@ class _GpsMapScreenState extends State<GpsMapScreen> {
 
 class _StatItem extends StatelessWidget {
   final IconData icon;
-  final String label, value;
+  final String label;
+  final String value;
   final Color color;
 
   const _StatItem({required this.icon, required this.label, required this.value, required this.color});
@@ -570,8 +614,8 @@ class _StatItem extends StatelessWidget {
       children: [
         Icon(icon, size: 16, color: color),
         const SizedBox(height: 2),
-        Text(value, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: color)),
-        Text(label, style: TextStyle(fontSize: 9, color: AppTheme.textSecondary)),
+        Text(value, style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 13)),
+        Text(label, style: TextStyle(color: AppTheme.textSecondary, fontSize: 9)),
       ],
     );
   }
@@ -588,9 +632,13 @@ class _LegendItem extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Container(width: 8, height: 8, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
-        const SizedBox(width: 4),
-        Text(label, style: TextStyle(color: AppTheme.textSecondary, fontSize: 10)),
+        Container(
+          width: 10,
+          height: 10,
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+        ),
+        const SizedBox(width: 5),
+        Text(label, style: TextStyle(color: AppTheme.textPrimary, fontSize: 9)),
       ],
     );
   }
@@ -598,7 +646,8 @@ class _LegendItem extends StatelessWidget {
 
 class _ModalMetric extends StatelessWidget {
   final IconData icon;
-  final String label, value;
+  final String label;
+  final String value;
   final Color? color;
 
   const _ModalMetric({required this.icon, required this.label, required this.value, this.color});
@@ -608,9 +657,9 @@ class _ModalMetric extends StatelessWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, size: 18, color: color ?? AppTheme.primary),
+        Icon(icon, size: 18, color: color ?? AppTheme.textSecondary),
         const SizedBox(height: 4),
-        Text(value, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppTheme.textPrimary)),
+        Text(value, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: color ?? AppTheme.textPrimary)),
         Text(label, style: TextStyle(fontSize: 10, color: AppTheme.textSecondary)),
       ],
     );

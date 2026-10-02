@@ -86,11 +86,14 @@ class _ReproductiveScreenState extends State<ReproductiveScreen> {
   }
 
   Future<void> _loadData() async {
+    if (!mounted) return;
     setState(() => _isLoading = true);
     try {
       final events = await RanchApiService.getReproductiveEvents();
+      if (!mounted) return;
       setState(() { _events = events; _isLoading = false; });
     } catch (_) {
+      if (!mounted) return;
       setState(() { _events = _demoEvents; _isLoading = false; });
     }
   }
