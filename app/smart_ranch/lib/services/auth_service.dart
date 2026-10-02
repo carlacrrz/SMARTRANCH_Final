@@ -11,7 +11,8 @@ class AuthService {
   static bool get isAuthenticated => _token != null;
   static String? get token => _token;
   static Map<String, dynamic>? get currentUser => _currentUser;
-  static String get userName => _currentUser?['full_name'] ?? _currentUser?['username'] ?? 'Usuario';
+  static set currentUser(Map<String, dynamic>? user) => _currentUser = user;
+  static String get userName => _currentUser?['name'] ?? _currentUser?['full_name'] ?? _currentUser?['username'] ?? 'Carlos';
 
   /// Login with username and password.
   static Future<bool> login(String username, String password) async {
@@ -82,6 +83,12 @@ class AuthService {
   /// Skip login (use demo mode without auth).
   static void enterDemoMode() {
     _token = null;
-    _currentUser = {'username': 'demo', 'full_name': 'Modo Demo', 'role': 'viewer'};
+    _currentUser = {
+      'username': 'demo',
+      'name': 'Carlos',
+      'full_name': 'Carlos Ganadero',
+      'role': 'admin',
+      'ranch_name': 'Rancho Cananea',
+    };
   }
 }

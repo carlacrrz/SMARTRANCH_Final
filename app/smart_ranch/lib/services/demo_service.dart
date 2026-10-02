@@ -179,6 +179,15 @@ class DemoService extends ChangeNotifier {
       // Health status
       final healthStatus = animal.healthState;
 
+      final batteryMap = {
+        'vaca_001': (94.0, 4.15),
+        'vaca_002': (88.0, 4.05),
+        'vaca_003': (76.0, 3.92),
+        'vaca_004': (91.0, 4.12),
+        'vaca_005': (62.0, 3.78),
+      };
+      final batData = batteryMap[animal.id] ?? (85.0, 4.0);
+
       final reading = SensorReading(
         deviceId: animal.id,
         animalName: animal.name,
@@ -199,6 +208,8 @@ class DemoService extends ChangeNotifier {
             double.parse(movementIntensity.toStringAsFixed(2)),
         estrusScore: double.parse(estrusScore.toStringAsFixed(2)),
         healthStatus: healthStatus,
+        batteryPercent: batData.$1,
+        batteryVoltage: batData.$2,
       );
 
       _latestReadings[animal.id] = reading;

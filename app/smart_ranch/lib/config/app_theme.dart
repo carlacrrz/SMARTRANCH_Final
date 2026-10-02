@@ -7,14 +7,14 @@ class AppTheme {
   static bool isDark = true;
 
   // --- Brand Colors ---
-  static const Color primary = Color(0xFF2596BE); // Blue accent
-  static const Color primaryDark = Color(0xFF1E7A9B);
+  static const Color primary = Color(0xFF619F49); // rgba(97, 159, 73)
+  static const Color primaryDark = Color(0xFF4A7D37);
   static const Color secondary = Color(0xFFFF6D00); // Warm orange (alerts)
 
-  static Color get surface => isDark ? const Color(0xFF121212) : const Color(0xFFF9FAFB);
-  static Color get surfaceVariant => isDark ? const Color(0xFF1E1E1E) : const Color(0xFFF3F4F6);
-  static Color get card => isDark ? const Color(0xFF1A1A1A) : const Color(0xFFFFFFFF);
-  static Color get cardBright => isDark ? const Color(0xFF2C2C2C) : const Color(0xFFF0FDF4);
+  static Color get surface => isDark ? const Color(0xFF101010) : const Color(0xFFF9FAFB);
+  static Color get surfaceVariant => isDark ? const Color(0xFF181818) : const Color(0xFFF3F4F6);
+  static Color get card => isDark ? const Color(0xFF141414) : const Color(0xFFFFFFFF);
+  static Color get cardBright => isDark ? const Color(0xFF222222) : const Color(0xFFF0FDF4);
   static Color get background => isDark ? const Color(0xFF000000) : const Color(0xFFFFFFFF);
   
   static Color get textPrimary => isDark ? const Color(0xFFF0F0F5) : const Color(0xFF111827);

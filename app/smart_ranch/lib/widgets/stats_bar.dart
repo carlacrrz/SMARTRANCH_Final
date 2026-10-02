@@ -25,93 +25,89 @@ class StatsBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
         color: AppTheme.surfaceVariant,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: AppTheme.divider),
       ),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(
-          children: [
-            // Connection status
-            Container(
-              padding: EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              decoration: BoxDecoration(
-                color: isConnected
-                    ? AppTheme.thiNormal.withAlpha(20)
-                    : AppTheme.thiEmergency.withAlpha(20),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    isConnected ? Icons.wifi : Icons.wifi_off,
-                    size: 14,
+      child: Wrap(
+        spacing: 14,
+        runSpacing: 8,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        alignment: WrapAlignment.spaceBetween,
+        children: [
+          // Connection status
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: isConnected
+                  ? AppTheme.thiNormal.withAlpha(20)
+                  : AppTheme.thiEmergency.withAlpha(20),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  isConnected ? Icons.wifi : Icons.wifi_off,
+                  size: 14,
+                  color: isConnected
+                      ? AppTheme.thiNormal
+                      : AppTheme.thiEmergency,
+                ),
+                const SizedBox(width: 5),
+                Text(
+                  isConnected ? 'En Línea' : 'Sin Conexión',
+                  style: TextStyle(
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w600,
                     color: isConnected
                         ? AppTheme.thiNormal
                         : AppTheme.thiEmergency,
                   ),
-                  const SizedBox(width: 4),
-                  Text(
-                    isConnected ? 'En Línea' : 'Sin Conexión',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: isConnected
-                          ? AppTheme.thiNormal
-                          : AppTheme.thiEmergency,
-                    ),
-                  ),
-                ],
+                ),
+              ],
+            ),
+          ),
+
+          // By level dots
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _LevelDot(
+                color: AppTheme.thiNormal,
+                count: normalCount,
+                label: 'Normal',
               ),
-            ),
-            const SizedBox(width: 16),
+              const SizedBox(width: 8),
+              _LevelDot(
+                color: AppTheme.thiAlert,
+                count: alertCount,
+                label: 'Alerta',
+              ),
+              const SizedBox(width: 8),
+              _LevelDot(
+                color: AppTheme.thiDanger,
+                count: dangerCount,
+                label: 'Peligro',
+              ),
+              const SizedBox(width: 8),
+              _LevelDot(
+                color: AppTheme.thiEmergency,
+                count: emergencyCount,
+                label: 'Emergencia',
+              ),
+            ],
+          ),
 
-            // Total animals
-            _StatItem(
-              icon: Icons.pets,
-              value: '$totalAnimals',
-              label: 'Cabezas',
-            ),
-            const SizedBox(width: 16),
-
-            // By level
-            _LevelDot(
-              color: AppTheme.thiNormal,
-              count: normalCount,
-              label: 'Normal',
-            ),
-            SizedBox(width: 10),
-            _LevelDot(
-              color: AppTheme.thiAlert,
-              count: alertCount,
-              label: 'Alerta',
-            ),
-            SizedBox(width: 10),
-            _LevelDot(
-              color: AppTheme.thiDanger,
-              count: dangerCount,
-              label: 'Peligro',
-            ),
-            SizedBox(width: 10),
-            _LevelDot(
-              color: AppTheme.thiEmergency,
-              count: emergencyCount,
-              label: 'Emergencia',
-            ),
-            const SizedBox(width: 16),
-
-            // Average THI
-            _StatItem(
-              icon: Icons.analytics_outlined,
-              value: avgThi.toStringAsFixed(1),
-              label: 'THI Prom.',
-            ),
-          ],
-        ),
+          // Average THI
+          _StatItem(
+            icon: Icons.analytics_outlined,
+            value: avgThi.toStringAsFixed(1),
+            label: 'THI Prom.',
+          ),
+        ],
       ),
     );
   }

@@ -15,9 +15,6 @@ class DashboardHomeScreen extends StatefulWidget {
 }
 
 class _DashboardHomeScreenState extends State<DashboardHomeScreen> {
-  DashboardStats? _stats;
-  bool _isLoading = true;
-
   static final _demoStats = DashboardStats(
     totalActive: 5,
     animalsByStatus: {'active': 5},
@@ -27,6 +24,9 @@ class _DashboardHomeScreenState extends State<DashboardHomeScreen> {
     unacknowledgedAlerts: 3,
   );
 
+  DashboardStats _stats = _demoStats;
+  bool _isLoading = false;
+
   @override
   void initState() {
     super.initState();
@@ -34,29 +34,36 @@ class _DashboardHomeScreenState extends State<DashboardHomeScreen> {
   }
 
   Future<void> _loadStats() async {
-    setState(() => _isLoading = true);
     try {
-      final result = await RanchApiService.getDashboardStats();
-      setState(() { _stats = result; _isLoading = false; });
+      final result = await RanchApiService.getDashboardStats().timeout(
+        const Duration(seconds: 2),
+      );
+      if (mounted) {
+        setState(() {
+          _stats = result;
+          _isLoading = false;
+        });
+      }
     } catch (_) {
-      setState(() { _stats = _demoStats; _isLoading = false; });
+      if (mounted) {
+        setState(() {
+          _stats = _demoStats;
+          _isLoading = false;
+        });
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading || _stats == null) {
-      return Center(child: CircularProgressIndicator(color: AppTheme.primary));
-    }
-
-    final stats = _stats!;
+    final stats = _stats;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Welcome header
+          // Welcome header (Always visible)
           _buildHeader(),
           const SizedBox(height: 12),
 
@@ -110,39 +117,52 @@ class _DashboardHomeScreenState extends State<DashboardHomeScreen> {
 
   Widget _buildHeader() {
     final hour = DateTime.now().hour;
-    final greeting = hour < 12 ? 'Buenos días' : hour < 18 ? 'Buenas tardes' : 'Buenas noches';
-    final ranchName = AuthService.currentUser?['ranch_name'] ?? 'Mi Rancho';
+    final timeGreeting = hour < 12 ? 'Buenos días' : hour < 18 ? 'Buenas tardes' : 'Buenas noches';
+    
+    final user = AuthService.currentUser;
+    String rawName = (user?['name'] ?? user?['full_name'] ?? user?['username'] ?? 'Carlos').toString();
+    if (rawName == 'demo' || rawName == 'Modo Demo' || rawName.isEmpty) {
+      rawName = 'Carlos';
+    }
+    final firstName = rawName.trim().split(' ').first;
+    final greeting = '$timeGreeting, $firstName!';
+    final ranchName = user?['ranch_name']?.toString() ?? 'Rancho Cananea';
+    final now = DateTime.now();
+    final months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+    final dateStr = '${now.day} ${months[now.month - 1]} ${now.year}';
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [AppTheme.primary.withAlpha(30), AppTheme.card],
-        ),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppTheme.primary.withAlpha(30)),
-      ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(8),
-            child: Image.asset('assets/images/logo_icon.png', width: 42, height: 42),
-          ),
-          const SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('$greeting 👋', style: TextStyle(
-                    color: AppTheme.textPrimary, fontWeight: FontWeight.w700, fontSize: 18)),
-                const SizedBox(height: 2),
-                Text('$ranchName — ${DateTime.now().day}/${DateTime.now().month}/${DateTime.now().year}',
-                    style: TextStyle(color: AppTheme.textSecondary, fontSize: 12)),
+                Text(
+                  greeting,
+                  style: TextStyle(
+                    color: AppTheme.textPrimary,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 26,
+                    letterSpacing: -0.5,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '$ranchName — $dateStr',
+                  style: TextStyle(
+                    color: AppTheme.textSecondary,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
               ],
             ),
           ),
           IconButton(
-            icon: Icon(Icons.refresh_rounded, color: AppTheme.textSecondary),
+            icon: Icon(Icons.refresh_rounded, color: AppTheme.primary, size: 24),
             onPressed: _loadStats,
             tooltip: 'Actualizar datos',
           ),

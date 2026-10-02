@@ -62,42 +62,18 @@ class _AnimalDetailScreenState extends State<AnimalDetailScreen> {
       appBar: AppBar(
         title: Text(
           reading.animalName.isNotEmpty ? reading.animalName : reading.deviceId,
+          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
-        backgroundColor: AppTheme.surface,
+        backgroundColor: AppTheme.primary,
+        foregroundColor: Colors.white,
+        iconTheme: const IconThemeData(color: Colors.white),
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(bottom: Radius.circular(16)),
+        ),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded),
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white),
           onPressed: () => Navigator.pop(context),
         ),
-        actions: [
-          Container(
-            margin: const EdgeInsets.only(right: 12),
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(
-              color: color.withAlpha(30),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: color.withAlpha(80)),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  AppTheme.thiIcon(reading.thiLevel),
-                  size: 16,
-                  color: color,
-                ),
-                SizedBox(width: 4),
-                Text(
-                  AppTheme.thiLabel(reading.thiLevel),
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: color,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
@@ -255,7 +231,7 @@ class _AnimalDetailScreenState extends State<AnimalDetailScreen> {
                 ),
                 const SizedBox(height: 16),
                 Container(
-                  padding: EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     color: AppTheme.card,
                     borderRadius: BorderRadius.circular(16),
@@ -264,17 +240,76 @@ class _AnimalDetailScreenState extends State<AnimalDetailScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        'Información del Dispositivo',
-                        style: Theme.of(context).textTheme.titleMedium,
+                      Row(
+                        children: [
+                          Icon(Icons.devices_other_rounded, size: 18, color: AppTheme.primary),
+                          const SizedBox(width: 6),
+                          Text(
+                            'Detalles del Dispositivo IoT',
+                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 8),
-                      _InfoRow(label: 'ID', value: reading.deviceId),
+                      const SizedBox(height: 12),
+                      _InfoRow(label: 'ID Collar', value: reading.deviceId),
                       _InfoRow(
-                        label: 'Nombre',
+                        label: 'Vaca Asignada',
                         value: reading.animalName.isNotEmpty
                             ? reading.animalName
                             : 'No asignado',
+                      ),
+                      // Batería del dispositivo
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 4),
+                        child: Row(
+                          children: [
+                            SizedBox(
+                              width: 120,
+                              child: Text(
+                                'Batería Collar',
+                                style: TextStyle(fontSize: 13, color: AppTheme.textSecondary),
+                              ),
+                            ),
+                            Expanded(
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    reading.batteryPercent > 80
+                                        ? Icons.battery_full_rounded
+                                        : reading.batteryPercent > 40
+                                            ? Icons.battery_5_bar_rounded
+                                            : reading.batteryPercent > 20
+                                                ? Icons.battery_2_bar_rounded
+                                                : Icons.battery_alert_rounded,
+                                    size: 16,
+                                    color: reading.batteryPercent > 50
+                                        ? AppTheme.primary
+                                        : reading.batteryPercent > 20
+                                            ? AppTheme.thiAlert
+                                            : AppTheme.thiDanger,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    '${reading.batteryPercent.toStringAsFixed(0)}% (${reading.batteryVoltage.toStringAsFixed(2)} V)',
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600,
+                                      color: reading.batteryPercent > 20
+                                          ? AppTheme.textPrimary
+                                          : AppTheme.thiDanger,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      _InfoRow(
+                        label: 'Señal / Red',
+                        value: '4G LTE / BLE 5.0 (Excelente)',
                       ),
                       _InfoRow(
                         label: 'Última lectura',

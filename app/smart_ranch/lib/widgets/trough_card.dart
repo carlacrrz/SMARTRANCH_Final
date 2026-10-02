@@ -148,7 +148,7 @@ class _TroughCardState extends State<TroughCard> {
     if (level <= 10) return const Color(0xFFFF1744);
     if (level <= 20) return const Color(0xFFFF6D00);
     if (level <= 50) return const Color(0xFFFFD600);
-    return const Color(0xFF00E5FF);
+    return const Color(0xFF3AAFA9);
   }
 }
 
@@ -167,7 +167,7 @@ class _WaterGauge extends StatelessWidget {
             ? const Color(0xFFFF6D00)
             : level <= 50
                 ? const Color(0xFFFFD600)
-                : const Color(0xFF00E5FF);
+                : const Color(0xFF3AAFA9);
 
     return LayoutBuilder(
       builder: (context, constraints) {

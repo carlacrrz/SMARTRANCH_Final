@@ -16,10 +16,19 @@ import 'screens/login_screen.dart';
 import 'screens/report_screen.dart';
 import 'screens/add_animal_screen.dart';
 import 'screens/system_status_screen.dart';
+import 'screens/settings_screen.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'services/auth_service.dart';
 import 'services/demo_service.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  try {
+    await Firebase.initializeApp();
+    debugPrint('Firebase conectado exitosamente con smartranch-innova');
+  } catch (e) {
+    debugPrint('Firebase init: $e');
+  }
   if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
     // Desktop window — minimum size handled by framework
   }
@@ -94,13 +103,19 @@ class _AuthGateState extends State<AuthGate> {
         onAuthenticated: () => setState(() => _authenticated = true),
       );
     }
-    return const MainShell();
+    return MainShell(
+      onLogout: () {
+        AuthService.logout();
+        setState(() => _authenticated = false);
+      },
+    );
   }
 }
 
 /// Desktop shell with NavigationRail sidebar.
 class MainShell extends StatefulWidget {
-  const MainShell({super.key});
+  final VoidCallback? onLogout;
+  const MainShell({super.key, this.onLogout});
 
   @override
   State<MainShell> createState() => _MainShellState();
@@ -125,6 +140,7 @@ class _MainShellState extends State<MainShell> {
     _Section('Finanzas', Icons.account_balance_rounded),
     _Section('Reportes', Icons.analytics_rounded),
     _Section('Agregar Animal', Icons.add_circle_outline_rounded),
+    _Section('Configuración', Icons.settings_rounded),
     _Section('Estado Sistema', Icons.dns_rounded),
   ];
 
@@ -159,7 +175,7 @@ class _MainShellState extends State<MainShell> {
       case 5:
         return ReproductiveScreen(demoService: _demoService);
       case 6:
-        return const AlertsScreen();
+        return AlertsScreen(demoService: _demoService);
       case 7:
         return const PesoScreen();
       case 8:
@@ -173,6 +189,8 @@ class _MainShellState extends State<MainShell> {
       case 12:
         return const AddAnimalScreen();
       case 13:
+        return const SettingsScreen();
+      case 14:
         return const SystemStatusScreen();
       default:
         return const Center(child: Text('Pantalla no encontrada'));
@@ -180,37 +198,38 @@ class _MainShellState extends State<MainShell> {
   }
 
   Widget _buildSidebar({required bool isMobile}) {
-    final width = isMobile ? 250.0 : (_railExtended ? 200.0 : 72.0);
+    final width = isMobile ? 260.0 : (_railExtended ? 200.0 : 72.0);
     final isExtended = isMobile || _railExtended;
     
-    Widget sidebar = AnimatedContainer(
-      duration: const Duration(milliseconds: 200),
-      curve: Curves.easeInOut,
+    Widget sidebar = Container(
       width: width,
       color: AppTheme.surface,
       child: Column(
         children: [
-          // Brand Header
+          // Brand Header (compact, no wasted blank space)
           Container(
-            height: isMobile ? 120 : 56,
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-            alignment: isMobile ? Alignment.bottomLeft : Alignment.centerLeft,
+            height: 56,
+            padding: const EdgeInsets.symmetric(horizontal: 14),
+            alignment: Alignment.centerLeft,
             child: Row(
               children: [
                 ClipRRect(
                   borderRadius: BorderRadius.circular(8),
                   child: Image.asset(
                     'assets/images/logo_icon.png',
-                    width: 32,
-                    height: 32,
+                    width: 30,
+                    height: 30,
                   ),
                 ),
                 if (isExtended) ...[
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 10),
                   Expanded(
                     child: Text(
                       'Smart Ranch',
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(fontSize: 15),
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                      ),
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
@@ -246,10 +265,34 @@ class _MainShellState extends State<MainShell> {
             ),
           ),
 
-          // Connection Status at bottom
+          // Logout Button
           Divider(height: 1, color: AppTheme.divider),
           Padding(
-            padding: EdgeInsets.fromLTRB(12, 12, 12, isMobile ? 24 : 12),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            child: ListTile(
+              dense: true,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              leading: const Icon(Icons.logout_rounded, color: Color(0xFFFF5252), size: 20),
+              title: isExtended
+                  ? const Text(
+                      'Cerrar Sesión',
+                      style: TextStyle(
+                        color: Color(0xFFFF5252),
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    )
+                  : null,
+              onTap: () {
+                if (isMobile) Navigator.pop(context);
+                widget.onLogout?.call();
+              },
+            ),
+          ),
+
+          // Connection Status at bottom
+          Padding(
+            padding: EdgeInsets.fromLTRB(14, 4, 14, isMobile ? 12 : 8),
             child: Row(
               children: [
                 Container(
@@ -265,7 +308,7 @@ class _MainShellState extends State<MainShell> {
                 if (isExtended) ...[
                   const SizedBox(width: 8),
                   Text(
-                    _demoService.isRunning ? 'Conectado' : 'Desconectado',
+                    _demoService.isRunning ? 'IoT En línea' : 'Desconectado',
                     style: TextStyle(
                       fontSize: 11,
                       color: AppTheme.textSecondary,
@@ -299,26 +342,26 @@ class _MainShellState extends State<MainShell> {
             // Title Bar (Desktop only, Mobile uses AppBar)
             if (!isMobile)
               Container(
-                height: 44,
+                height: 48,
                 padding: const EdgeInsets.symmetric(horizontal: 24),
-                decoration: BoxDecoration(
-                  color: AppTheme.background,
-                  border: Border(
-                    bottom: BorderSide(color: AppTheme.divider, width: 1),
-                  ),
+                decoration: const BoxDecoration(
+                  color: AppTheme.primary,
+                  borderRadius: BorderRadius.vertical(bottom: Radius.circular(16)),
                 ),
                 child: Row(
                   children: [
                     Icon(
                       _sections[_selectedIndex].icon,
-                      size: 16,
-                      color: AppTheme.primary,
+                      size: 20,
+                      color: Colors.white,
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 10),
                     Text(
                       _sections[_selectedIndex].label,
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontSize: 14,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
                       ),
                     ),
                   ],
@@ -327,12 +370,9 @@ class _MainShellState extends State<MainShell> {
 
             // Body
             Expanded(
-              child: IndexedStack(
-                index: _selectedIndex,
-                children: List.generate(
-                  _sections.length,
-                  (i) => _buildScreen(i),
-                ),
+              child: KeyedSubtree(
+                key: ValueKey(_selectedIndex),
+                child: _buildScreen(_selectedIndex),
               ),
             ),
           ],
@@ -341,32 +381,42 @@ class _MainShellState extends State<MainShell> {
         if (isMobile) {
           return Scaffold(
             appBar: AppBar(
-              backgroundColor: AppTheme.background,
-              foregroundColor: AppTheme.textPrimary,
+              backgroundColor: AppTheme.primary,
+              foregroundColor: Colors.white,
+              iconTheme: const IconThemeData(color: Colors.white),
+              centerTitle: false,
+              toolbarHeight: 56,
               elevation: 0,
-              title: Row(
-                children: [
-                  Icon(
-                    _sections[_selectedIndex].icon,
-                    size: 18,
-                    color: AppTheme.primary,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    _sections[_selectedIndex].label,
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontSize: 16,
-                    ),
-                  ),
-                ],
+              shape: const RoundedRectangleBorder(
+                borderRadius: BorderRadius.vertical(bottom: Radius.circular(16)),
               ),
-              bottom: PreferredSize(
-                preferredSize: const Size.fromHeight(1),
-                child: Container(color: AppTheme.divider, height: 1),
+              titleSpacing: 0,
+              title: Align(
+                alignment: Alignment.centerLeft,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Icon(
+                      _sections[_selectedIndex].icon,
+                      size: 20,
+                      color: Colors.white,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      _sections[_selectedIndex].label,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
             drawer: Drawer(
-              backgroundColor: AppTheme.surface,
+              backgroundColor: const Color(0xFF080808),
               child: _buildSidebar(isMobile: true),
             ),
             body: content,

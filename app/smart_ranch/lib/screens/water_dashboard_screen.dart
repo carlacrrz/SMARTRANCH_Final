@@ -35,14 +35,14 @@ class WaterDashboardScreen extends StatelessWidget {
                     icon: Icons.water_drop_rounded,
                     label: 'Bebederos',
                     value: '${troughs.length}',
-                    color: const Color(0xFF00E5FF),
+                    color: const Color(0xFF3AAFA9),
                   ),
                   _WaterStat(
                     icon: Icons.warning_amber_rounded,
                     label: 'Nivel Bajo',
                     value: '$lowCount',
                     color: lowCount > 0
-                        ? Color(0xFFFF1744)
+                        ? const Color(0xFFFF1744)
                         : AppTheme.textSecondary,
                   ),
                   _WaterStat(
@@ -51,7 +51,7 @@ class WaterDashboardScreen extends StatelessWidget {
                     value: troughs.isNotEmpty
                         ? '${(troughs.map((t) => t.levelPercent).reduce((a, b) => a + b) / troughs.length).toStringAsFixed(0)}%'
                         : '--',
-                    color: const Color(0xFF00E5FF),
+                    color: const Color(0xFF3AAFA9),
                   ),
                 ],
               ),

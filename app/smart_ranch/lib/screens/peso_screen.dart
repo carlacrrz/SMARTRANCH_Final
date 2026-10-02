@@ -3,8 +3,9 @@ import 'package:fl_chart/fl_chart.dart';
 import '../config/app_theme.dart';
 import '../models/ranch_models.dart';
 import '../services/ranch_api_service.dart';
+import '../widgets/crud_dialogs.dart';
 
-/// Weight tracking screen — 2-column desktop layout: chart | table.
+/// Weight tracking screen with interactive animal selection and editing.
 class PesoScreen extends StatefulWidget {
   const PesoScreen({super.key});
 
@@ -15,6 +16,7 @@ class PesoScreen extends StatefulWidget {
 class _PesoScreenState extends State<PesoScreen> {
   List<WeightRecord> _records = [];
   bool _isLoading = true;
+  int? _selectedAnimalId;
 
   static final _demoRecords = [
     WeightRecord(id: 1, animalId: 1, weightKg: 420, bodyConditionScore: 6,
@@ -57,6 +59,24 @@ class _PesoScreenState extends State<PesoScreen> {
     }
   }
 
+  Future<void> _openWeightDialog({int? animalId}) async {
+    final saved = await showAddWeightDialog(context, animalId: animalId);
+    if (saved == true) {
+      await _loadData();
+      if (animalId != null) {
+        setState(() => _selectedAnimalId = animalId);
+      }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✅ Peso registrado y actualizado exitosamente'),
+            backgroundColor: AppTheme.primary,
+          ),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final latestByAnimal = <int, WeightRecord>{};
@@ -81,19 +101,12 @@ class _PesoScreenState extends State<PesoScreen> {
         children: [
           // Stats strip
           _buildStatsRow(latestByAnimal, avgWeight),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
 
-          // 2-column layout: chart | table
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Left — Weight chart
-              Expanded(flex: 6, child: _buildWeightChart()),
-              const SizedBox(width: 8),
-              // Right — Latest weights
-              Expanded(flex: 4, child: _buildLatestWeights(latestByAnimal)),
-            ],
-          ),
+          // Stacked layout: chart on top, table below
+          _buildWeightChart(),
+          const SizedBox(height: 12),
+          _buildLatestWeights(latestByAnimal),
         ],
       ),
     );
@@ -101,9 +114,10 @@ class _PesoScreenState extends State<PesoScreen> {
 
   Widget _buildStatsRow(Map<int, WeightRecord> latestByAnimal, double avgWeight) {
     return Container(
-      padding: EdgeInsets.all(10),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: AppTheme.card, borderRadius: BorderRadius.circular(10),
+        color: AppTheme.card,
+        borderRadius: BorderRadius.circular(10),
         border: Border.all(color: AppTheme.divider),
       ),
       child: Row(
@@ -118,47 +132,106 @@ class _PesoScreenState extends State<PesoScreen> {
   }
 
   Widget _buildWeightChart() {
-    final lupitaRecords = _records.where((r) => r.animalId == 1).toList()
-      ..sort((a, b) => (a.recordedAt ?? DateTime.now()).compareTo(b.recordedAt ?? DateTime.now()));
-
-    if (lupitaRecords.length < 2) {
+    if (_selectedAnimalId == null) {
       return Container(
-        height: 200,
+        height: 180,
+        width: double.infinity,
+        padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: AppTheme.card, borderRadius: BorderRadius.circular(10),
+          color: AppTheme.card,
+          borderRadius: BorderRadius.circular(10),
           border: Border.all(color: AppTheme.divider),
         ),
         child: Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.show_chart_rounded, size: 32, color: AppTheme.textSecondary.withAlpha(80)),
-              SizedBox(height: 8),
-              Text('Datos insuficientes para gráfica',
-                  style: TextStyle(color: AppTheme.textSecondary, fontSize: 12)),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppTheme.primary.withAlpha(20),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(Icons.touch_app_rounded, size: 28, color: AppTheme.primary),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                'Seleccione una vaca para ver su gráfica de peso',
+                style: TextStyle(color: AppTheme.textPrimary, fontWeight: FontWeight.w700, fontSize: 13),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Toca cualquier fila en la lista de abajo para consultar su curva de crecimiento.',
+                style: TextStyle(color: AppTheme.textSecondary, fontSize: 11),
+                textAlign: TextAlign.center,
+              ),
             ],
           ),
         ),
       );
     }
 
-    final spots = lupitaRecords.asMap().entries.map((e) {
+    final animalId = _selectedAnimalId!;
+    final animalName = _animalNames[animalId] ?? 'Animal #$animalId';
+    final animalRecords = _records.where((r) => r.animalId == animalId).toList()
+      ..sort((a, b) => (a.recordedAt ?? DateTime.now()).compareTo(b.recordedAt ?? DateTime.now()));
+
+    if (animalRecords.length < 2) {
+      return Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppTheme.card,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: AppTheme.divider),
+        ),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                Icon(Icons.show_chart_rounded, size: 16, color: AppTheme.primary),
+                const SizedBox(width: 6),
+                Text('Curva de Peso — $animalName',
+                    style: TextStyle(color: AppTheme.textPrimary, fontWeight: FontWeight.w600, fontSize: 13)),
+                const Spacer(),
+                TextButton.icon(
+                  onPressed: () => _openWeightDialog(animalId: animalId),
+                  icon: const Icon(Icons.add_rounded, size: 14),
+                  label: const Text('Nuevo pesaje', style: TextStyle(fontSize: 11)),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            Icon(Icons.show_chart_rounded, size: 32, color: AppTheme.textSecondary.withAlpha(80)),
+            const SizedBox(height: 8),
+            Text('Solo se cuenta con 1 pesaje registrado para $animalName (${animalRecords.first.weightKg.toStringAsFixed(0)} kg).',
+                style: TextStyle(color: AppTheme.textSecondary, fontSize: 12)),
+            const SizedBox(height: 4),
+            Text('Agrega más registros para trazar la curva de evolución.',
+                style: TextStyle(color: AppTheme.textSecondary, fontSize: 10)),
+            const SizedBox(height: 12),
+          ],
+        ),
+      );
+    }
+
+    final spots = animalRecords.asMap().entries.map((e) {
       return FlSpot(e.key.toDouble(), e.value.weightKg);
     }).toList();
 
     final minW = spots.map((s) => s.y).reduce((a, b) => a < b ? a : b) - 10;
     final maxW = spots.map((s) => s.y).reduce((a, b) => a > b ? a : b) + 10;
 
-    final firstW = lupitaRecords.first.weightKg;
-    final lastW = lupitaRecords.last.weightKg;
-    final daysDiff = (lupitaRecords.last.recordedAt ?? DateTime.now())
-        .difference(lupitaRecords.first.recordedAt ?? DateTime.now()).inDays;
+    final firstW = animalRecords.first.weightKg;
+    final lastW = animalRecords.last.weightKg;
+    final daysDiff = (animalRecords.last.recordedAt ?? DateTime.now())
+        .difference(animalRecords.first.recordedAt ?? DateTime.now()).inDays;
     final gdp = daysDiff > 0 ? (lastW - firstW) / daysDiff : 0.0;
 
     return Container(
-      padding: EdgeInsets.all(14),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: AppTheme.card, borderRadius: BorderRadius.circular(10),
+        color: AppTheme.card,
+        borderRadius: BorderRadius.circular(10),
         border: Border.all(color: AppTheme.divider),
       ),
       child: Column(
@@ -167,12 +240,12 @@ class _PesoScreenState extends State<PesoScreen> {
           Row(
             children: [
               Icon(Icons.show_chart_rounded, size: 16, color: AppTheme.primary),
-              SizedBox(width: 6),
-              Text('Curva de Peso — ${_animalNames[1] ?? 'Animal'}',
+              const SizedBox(width: 6),
+              Text('Curva de Peso — $animalName',
                   style: TextStyle(color: AppTheme.textPrimary, fontWeight: FontWeight.w600, fontSize: 13)),
               const Spacer(),
               Container(
-                padding: EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
                 decoration: BoxDecoration(
                   color: gdp >= 0 ? AppTheme.primary.withAlpha(15) : AppTheme.thiDanger.withAlpha(15),
                   borderRadius: BorderRadius.circular(6),
@@ -192,6 +265,13 @@ class _PesoScreenState extends State<PesoScreen> {
                     ),
                   ],
                 ),
+              ),
+              const SizedBox(width: 8),
+              IconButton(
+                icon: const Icon(Icons.add_circle_outline_rounded, size: 18),
+                color: AppTheme.primary,
+                tooltip: 'Registrar nuevo peso',
+                onPressed: () => _openWeightDialog(animalId: animalId),
               ),
             ],
           ),
@@ -216,9 +296,9 @@ class _PesoScreenState extends State<PesoScreen> {
                       reservedSize: 22,
                       getTitlesWidget: (value, meta) {
                         final idx = value.toInt();
-                        if (idx < 0 || idx >= lupitaRecords.length) return const SizedBox.shrink();
-                        final dt = lupitaRecords[idx].recordedAt;
-                        if (dt == null) return SizedBox.shrink();
+                        if (idx < 0 || idx >= animalRecords.length) return const SizedBox.shrink();
+                        final dt = animalRecords[idx].recordedAt;
+                        if (dt == null) return const SizedBox.shrink();
                         return Text('${dt.day}/${dt.month}',
                             style: TextStyle(color: AppTheme.textSecondary, fontSize: 9));
                       },
@@ -268,71 +348,130 @@ class _PesoScreenState extends State<PesoScreen> {
 
     return Container(
       decoration: BoxDecoration(
-        color: AppTheme.card, borderRadius: BorderRadius.circular(10),
+        color: AppTheme.card,
+        borderRadius: BorderRadius.circular(10),
         border: Border.all(color: AppTheme.divider),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: EdgeInsets.all(12),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             child: Row(
               children: [
-                Icon(Icons.format_list_numbered_rounded, size: 16, color: AppTheme.textSecondary),
-                SizedBox(width: 6),
-                Text('Últimos Pesos', style: TextStyle(
+                Icon(Icons.format_list_numbered_rounded, size: 16, color: AppTheme.primary),
+                const SizedBox(width: 6),
+                Text('Últimos Pesajes Registrados', style: TextStyle(
                     color: AppTheme.textPrimary, fontWeight: FontWeight.w600, fontSize: 13)),
+                const Spacer(),
+                ElevatedButton.icon(
+                  onPressed: () => _openWeightDialog(),
+                  icon: const Icon(Icons.add_rounded, size: 14),
+                  label: const Text('Registrar Peso', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.primary,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                  ),
+                ),
               ],
             ),
           ),
           Divider(height: 1, color: AppTheme.divider),
           ...sorted.map((entry) {
+            final animalId = entry.key;
             final record = entry.value;
-            final name = _animalNames[entry.key] ?? 'Animal ${entry.key}';
+            final name = _animalNames[animalId] ?? 'Animal $animalId';
             final bcs = record.bodyConditionScore;
+            final isSelected = _selectedAnimalId == animalId;
 
-            return Container(
-              padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(
-                border: Border(bottom: BorderSide(color: AppTheme.divider.withAlpha(80))),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    width: 36, height: 36,
-                    decoration: BoxDecoration(
-                      color: AppTheme.primary.withAlpha(15),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Center(
-                      child: Text(record.weightKg.toStringAsFixed(0),
-                          style: TextStyle(color: AppTheme.primary, fontWeight: FontWeight.w800, fontSize: 12)),
-                    ),
+            return InkWell(
+              onTap: () {
+                setState(() => _selectedAnimalId = animalId);
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                decoration: BoxDecoration(
+                  color: isSelected ? AppTheme.primary.withAlpha(20) : Colors.transparent,
+                  border: Border(
+                    bottom: BorderSide(color: AppTheme.divider.withAlpha(80)),
+                    left: isSelected ? const BorderSide(color: AppTheme.primary, width: 3) : BorderSide.none,
                   ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(name, style: TextStyle(
-                            color: AppTheme.textPrimary, fontWeight: FontWeight.w600, fontSize: 12)),
-                        Row(
-                          children: [
-                            Text('${record.weightKg.toStringAsFixed(1)} kg',
-                                style: TextStyle(color: AppTheme.textSecondary, fontSize: 10)),
-                            if (bcs != null) ...[
-                              const SizedBox(width: 8),
-                              _buildBcsIndicator(bcs),
-                            ],
-                          ],
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 40, height: 40,
+                      decoration: BoxDecoration(
+                        color: isSelected ? AppTheme.primary : AppTheme.primary.withAlpha(15),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Center(
+                        child: Text(
+                          record.weightKg.toStringAsFixed(0),
+                          style: TextStyle(
+                            color: isSelected ? Colors.white : AppTheme.primary,
+                            fontWeight: FontWeight.w800,
+                            fontSize: 12,
+                          ),
                         ),
-                      ],
+                      ),
                     ),
-                  ),
-                  if (record.recordedAt != null)
-                    Text('${record.recordedAt!.day}/${record.recordedAt!.month}',
-                        style: TextStyle(color: AppTheme.textSecondary, fontSize: 9)),
-                ],
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Text(
+                                name,
+                                style: TextStyle(
+                                  color: AppTheme.textPrimary,
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 13,
+                                ),
+                              ),
+                              if (isSelected) ...[
+                                const SizedBox(width: 6),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                                  decoration: BoxDecoration(
+                                    color: AppTheme.primary,
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: const Text('Viendo gráfica', style: TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold)),
+                                ),
+                              ],
+                            ],
+                          ),
+                          const SizedBox(height: 2),
+                          Row(
+                            children: [
+                              Text('${record.weightKg.toStringAsFixed(1)} kg',
+                                  style: TextStyle(color: AppTheme.textSecondary, fontSize: 11)),
+                              if (bcs != null) ...[
+                                const SizedBox(width: 8),
+                                _buildBcsIndicator(bcs),
+                              ],
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (record.recordedAt != null)
+                      Text('${record.recordedAt!.day}/${record.recordedAt!.month}',
+                          style: TextStyle(color: AppTheme.textSecondary, fontSize: 10)),
+                    const SizedBox(width: 8),
+                    IconButton(
+                      icon: const Icon(Icons.edit_outlined, size: 18),
+                      color: AppTheme.primary,
+                      tooltip: 'Editar o registrar peso',
+                      onPressed: () => _openWeightDialog(animalId: animalId),
+                    ),
+                  ],
+                ),
               ),
             );
           }),
@@ -351,7 +490,7 @@ class _PesoScreenState extends State<PesoScreen> {
                 : AppTheme.secondary;
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
       decoration: BoxDecoration(
         color: color.withAlpha(15),
         borderRadius: BorderRadius.circular(4),
@@ -374,7 +513,7 @@ class _StatColumn extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Icon(icon, size: 18, color: AppTheme.textSecondary),
-        SizedBox(height: 2),
+        const SizedBox(height: 2),
         Text(value, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: AppTheme.textPrimary)),
         Text(label, style: TextStyle(fontSize: 9, color: AppTheme.textSecondary)),
       ],

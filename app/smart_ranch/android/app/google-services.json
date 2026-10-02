@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "486367377643",
+    "project_id": "smartranch-innova",
+    "storage_bucket": "smartranch-innova.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:486367377643:android:e1180dee76ebd68019a6ae",
+        "android_client_info": {
+          "package_name": "Smart.Ranch1"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "486367377643-1pg8qqsfankc4lp8nd1gpk4472d4ss6r.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA9aFR2W6KRQoMYNaKkfbn4ourvW314XAI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "486367377643-1pg8qqsfankc4lp8nd1gpk4472d4ss6r.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

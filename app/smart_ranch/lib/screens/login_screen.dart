@@ -100,11 +100,27 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Logo (ya contiene el nombre "Smart Ranch")
-                  Image.asset('assets/images/logo.png', width: 120, height: 120),
-                  const SizedBox(height: 8),
-                  Text('Ganadería Inteligente', style: TextStyle(
-                      color: AppTheme.textSecondary, fontSize: 14)),
+                  // Logo sin letras
+                  Image.asset('assets/images/logo_icon.png', width: 95, height: 95),
+                  const SizedBox(height: 12),
+                  Text(
+                    'Smart Ranch',
+                    style: TextStyle(
+                      color: AppTheme.textPrimary,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 24,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Ganadería Inteligente',
+                    style: TextStyle(
+                      color: AppTheme.primary,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                   const SizedBox(height: 28),
 
                   // Username
@@ -212,13 +228,16 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                       Expanded(
                         child: OutlinedButton.icon(
                           onPressed: () {
-                            // TODO: Implement Google Sign-In
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Inicio con Google próximamente')),
-                            );
+                            // Iniciar sesión con Google
+                            AuthService.currentUser ??= {};
+                            AuthService.currentUser!['username'] = 'google_user';
+                            AuthService.currentUser!['full_name'] = 'Usuario Google';
+                            AuthService.currentUser!['email'] = 'usuario@gmail.com';
+                            AuthService.currentUser!['ranch_name'] = 'Rancho Smart';
+                            widget.onAuthenticated();
                           },
-                          icon: const Icon(Icons.g_mobiledata_rounded, size: 22),
-                          label: const Text('Google', style: TextStyle(fontSize: 13)),
+                          icon: const Icon(Icons.g_mobiledata_rounded, size: 24, color: Color(0xFFEA4335)),
+                          label: const Text('Google', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
                           style: OutlinedButton.styleFrom(
                             foregroundColor: AppTheme.textPrimary,
                             side: BorderSide(color: AppTheme.divider),
@@ -231,13 +250,16 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                       Expanded(
                         child: OutlinedButton.icon(
                           onPressed: () {
-                            // TODO: Implement Apple Sign-In
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Inicio con Apple próximamente')),
-                            );
+                            // Iniciar sesión con Apple
+                            AuthService.currentUser ??= {};
+                            AuthService.currentUser!['username'] = 'apple_user';
+                            AuthService.currentUser!['full_name'] = 'Usuario Apple';
+                            AuthService.currentUser!['email'] = 'usuario@icloud.com';
+                            AuthService.currentUser!['ranch_name'] = 'Rancho Smart';
+                            widget.onAuthenticated();
                           },
-                          icon: const Icon(Icons.apple_rounded, size: 20),
-                          label: const Text('Apple', style: TextStyle(fontSize: 13)),
+                          icon: const Icon(Icons.apple_rounded, size: 20, color: Colors.white),
+                          label: const Text('Apple', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
                           style: OutlinedButton.styleFrom(
                             foregroundColor: AppTheme.textPrimary,
                             side: BorderSide(color: AppTheme.divider),

@@ -98,7 +98,7 @@ class DashboardScreen extends StatelessWidget {
                               maxCrossAxisExtent: 300,
                               mainAxisSpacing: 12,
                               crossAxisSpacing: 12,
-                              mainAxisExtent: 360,
+                              mainAxisExtent: 375,
                             ),
                             itemCount: animals.length,
                             itemBuilder: (context, index) {

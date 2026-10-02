@@ -3,7 +3,7 @@ import '../config/app_theme.dart';
 import '../models/sensor_reading.dart';
 import 'thi_gauge.dart';
 
-/// Card widget displaying an animal's current status — desktop optimized.
+/// Card widget displaying an animal's current status — responsive and overflow-safe.
 class AnimalCard extends StatefulWidget {
   final SensorReading reading;
   final VoidCallback? onTap;
@@ -39,42 +39,44 @@ class _AnimalCardState extends State<AnimalCard> {
       child: GestureDetector(
         onTap: widget.onTap,
         child: AnimatedContainer(
-          duration: Duration(milliseconds: 200),
+          duration: const Duration(milliseconds: 200),
           decoration: BoxDecoration(
             color: _hovered ? AppTheme.cardBright : AppTheme.card,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(14),
             border: Border.all(
-              color: isDanger ? color.withAlpha(150) : color.withAlpha(40),
+              color: isDanger ? color.withAlpha(150) : color.withAlpha(50),
               width: isDanger ? 1.5 : 1,
             ),
             boxShadow: [
               if (isDanger)
                 BoxShadow(
                   color: color.withAlpha(30),
-                  blurRadius: 20,
-                  spreadRadius: 2,
+                  blurRadius: 16,
+                  spreadRadius: 1,
                 ),
               if (_hovered)
                 BoxShadow(
                   color: Colors.black.withAlpha(40),
-                  blurRadius: 12,
+                  blurRadius: 10,
                   offset: const Offset(0, 4),
                 ),
             ],
           ),
           child: Padding(
-            padding: const EdgeInsets.all(14),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             child: Column(
+              mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Header: Icon + Name + Badges
+                // Top Row: Icon + Name + Alert Badges (NO status badge here)
                 Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     Container(
                       width: 32,
                       height: 32,
                       decoration: BoxDecoration(
-                        color: color.withAlpha(15),
+                        color: color.withAlpha(20),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Icon(
@@ -87,6 +89,7 @@ class _AnimalCardState extends State<AnimalCard> {
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
                         children: [
                           Text(
                             reading.animalName.isNotEmpty
@@ -97,6 +100,7 @@ class _AnimalCardState extends State<AnimalCard> {
                               fontWeight: FontWeight.w700,
                               color: AppTheme.textPrimary,
                             ),
+                            maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
                           Text(
@@ -106,15 +110,16 @@ class _AnimalCardState extends State<AnimalCard> {
                               color: AppTheme.textSecondary,
                               fontFamily: 'monospace',
                             ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ],
                       ),
                     ),
-                    // Health badge
                     if (widget.healthAlertType != null &&
                         widget.healthAlertType != 'healthy')
                       Padding(
-                        padding: const EdgeInsets.only(right: 4),
+                        padding: const EdgeInsets.only(left: 4),
                         child: _IconBadge(
                           icon: widget.healthAlertType == 'sick_suspected'
                               ? Icons.local_hospital_rounded
@@ -129,17 +134,15 @@ class _AnimalCardState extends State<AnimalCard> {
                                   : 'Letargia',
                         ),
                       ),
-                    // Estrus badge
                     if (widget.hasEstrusAlert)
                       Padding(
-                        padding: const EdgeInsets.only(right: 4),
-                        child: _IconBadge(
+                        padding: const EdgeInsets.only(left: 4),
+                        child: const _IconBadge(
                           icon: Icons.favorite_rounded,
-                          color: const Color(0xFFE91E63),
+                          color: Color(0xFFE91E63),
                           tooltip: 'Celo detectado',
                         ),
                       ),
-                    _StatusBadge(level: reading.thiLevel),
                   ],
                 ),
                 const SizedBox(height: 10),
@@ -149,47 +152,63 @@ class _AnimalCardState extends State<AnimalCard> {
                   child: ThiGauge(
                     value: reading.thi,
                     level: reading.thiLevel,
-                    size: 85,
+                    size: 82,
                   ),
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 12),
 
-                // Stats grid — Wrap prevents overflow
-                Wrap(
-                  alignment: WrapAlignment.spaceAround,
-                  spacing: 4,
-                  runSpacing: 8,
+                // Stats in 2 Rows x 2 Columns
+                Row(
                   children: [
-                    _StatChip(
-                      icon: Icons.thermostat_rounded,
-                      label: '${reading.bodyTemp.toStringAsFixed(1)}°C',
-                      sublabel: 'Corporal',
-                      color: reading.bodyTemp > 40
-                          ? AppTheme.thiDanger
-                          : AppTheme.textSecondary,
+                    Expanded(
+                      child: _StatChip(
+                        icon: Icons.thermostat_rounded,
+                        label: '${reading.bodyTemp.toStringAsFixed(1)}°C',
+                        sublabel: 'T. Corporal',
+                        color: reading.bodyTemp > 40
+                            ? AppTheme.thiDanger
+                            : AppTheme.textSecondary,
+                      ),
                     ),
-                    _StatChip(
-                      icon: Icons.wb_sunny_rounded,
-                      label: '${reading.ambientTemp.toStringAsFixed(1)}°C',
-                      sublabel: 'Ambiente',
-                      color: AppTheme.textSecondary,
-                    ),
-                    _StatChip(
-                      icon: Icons.water_drop_rounded,
-                      label: '${reading.humidity.toStringAsFixed(0)}%',
-                      sublabel: 'Humedad',
-                      color: AppTheme.textSecondary,
-                    ),
-                    _StatChip(
-                      icon: Icons.directions_walk_rounded,
-                      label: reading.movementIntensity.toStringAsFixed(0),
-                      sublabel: 'Movimiento',
-                      color: reading.movementIntensity > 80
-                          ? AppTheme.thiAlert
-                          : AppTheme.textSecondary,
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: _StatChip(
+                        icon: Icons.wb_sunny_rounded,
+                        label: '${reading.ambientTemp.toStringAsFixed(1)}°C',
+                        sublabel: 'T. Ambiente',
+                        color: AppTheme.textSecondary,
+                      ),
                     ),
                   ],
                 ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _StatChip(
+                        icon: Icons.water_drop_rounded,
+                        label: '${reading.humidity.toStringAsFixed(0)}%',
+                        sublabel: 'Humedad',
+                        color: AppTheme.textSecondary,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: _StatChip(
+                        icon: Icons.directions_walk_rounded,
+                        label: reading.movementIntensity.toStringAsFixed(0),
+                        sublabel: 'Actividad',
+                        color: reading.movementIntensity > 80
+                            ? AppTheme.thiAlert
+                            : AppTheme.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+
+                // Status Badge at the bottom
+                _StatusBadge(level: reading.thiLevel),
               ],
             ),
           ),
@@ -219,7 +238,7 @@ class _IconBadge extends StatelessWidget {
         decoration: BoxDecoration(
           color: color.withAlpha(20),
           borderRadius: BorderRadius.circular(6),
-          border: Border.all(color: color.withAlpha(60)),
+          border: Border.all(color: color.withAlpha(70)),
         ),
         child: Icon(icon, size: 14, color: color),
       ),
@@ -235,23 +254,27 @@ class _StatusBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     final color = AppTheme.thiColor(level);
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 6),
       decoration: BoxDecoration(
-        color: color.withAlpha(20),
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: color.withAlpha(60)),
+        color: color.withAlpha(25),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: color.withAlpha(90)),
       ),
+      alignment: Alignment.center,
       child: Row(
         mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(AppTheme.thiIcon(level), size: 12, color: color),
-          SizedBox(width: 4),
+          Icon(AppTheme.thiIcon(level), size: 14, color: color),
+          const SizedBox(width: 6),
           Text(
-            AppTheme.thiLabel(level),
+            AppTheme.thiLabel(level).toUpperCase(),
             style: TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.w600,
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
               color: color,
+              letterSpacing: 0.8,
             ),
           ),
         ],
@@ -275,23 +298,46 @@ class _StatChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Icon(icon, size: 14, color: color),
-        const SizedBox(height: 2),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-            color: AppTheme.textPrimary,
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      decoration: BoxDecoration(
+        color: AppTheme.surfaceVariant.withAlpha(120),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: AppTheme.divider.withAlpha(60)),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, size: 14, color: color),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: AppTheme.textPrimary,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                Text(
+                  sublabel,
+                  style: TextStyle(
+                    fontSize: 9.5,
+                    color: AppTheme.textSecondary,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
           ),
-        ),
-        Text(
-          sublabel,
-          style: TextStyle(fontSize: 9, color: AppTheme.textSecondary),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

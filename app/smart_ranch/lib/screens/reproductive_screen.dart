@@ -5,6 +5,7 @@ import '../models/reproduction_alert.dart';
 import '../models/sensor_reading.dart';
 import '../services/demo_service.dart';
 import '../services/ranch_api_service.dart';
+import '../widgets/crud_dialogs.dart';
 
 /// Reproductive management dashboard — 3-panel desktop layout.
 /// Left: IoT celo detection. Center: Gestation calendar. Right: Event timeline.
@@ -94,6 +95,17 @@ class _ReproductiveScreenState extends State<ReproductiveScreen> {
     }
   }
 
+  Future<void> _openAddDialog({String? defaultType, int? animalId}) async {
+    final saved = await showAddReproductiveDialog(
+      context,
+      defaultType: defaultType,
+      animalId: animalId,
+    );
+    if (saved == true) {
+      await _loadData();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
@@ -115,10 +127,10 @@ class _ReproductiveScreenState extends State<ReproductiveScreen> {
 
     return Column(
       children: [
-        // KPI Strip
+        // KPI Strip (Scrollable without truncation)
         Container(
-          margin: EdgeInsets.fromLTRB(16, 12, 16, 0),
-          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
           decoration: BoxDecoration(
             color: AppTheme.card,
             borderRadius: BorderRadius.circular(10),
@@ -133,12 +145,12 @@ class _ReproductiveScreenState extends State<ReproductiveScreen> {
                 _KpiChip(icon: Icons.science_rounded, label: 'Inseminaciones',
                     value: '$inseminations', color: AppTheme.secondary),
                 _KpiChip(icon: Icons.pregnant_woman_rounded, label: 'Gestantes',
-                    value: '$pregnantCount', color: Color(0xFFAB47BC)),
+                    value: '$pregnantCount', color: const Color(0xFFAB47BC)),
                 _KpiChip(icon: Icons.child_care_rounded, label: 'Partos',
                     value: '$birthsCount', color: AppTheme.primary),
-                _KpiChip(icon: Icons.sensors_rounded, label: 'Celos det.',
+                _KpiChip(icon: Icons.sensors_rounded, label: 'Celos reg.',
                     value: '$heatsCount', color: Colors.pinkAccent),
-                _KpiChip(icon: Icons.event_note_rounded, label: 'Total',
+                _KpiChip(icon: Icons.event_note_rounded, label: 'Total eventos',
                     value: '${_events.length}', color: AppTheme.textSecondary),
               ],
             ),
@@ -153,53 +165,59 @@ class _ReproductiveScreenState extends State<ReproductiveScreen> {
             builder: (context, constraints) {
               if (constraints.maxWidth < 800) {
                 return SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       // LEFT — IoT Celo en tiempo real
-                      SizedBox(
-                        height: 300,
-                        child: _buildCeloPanel(estrusAlerts, readings),
-                      ),
+                      _buildCeloPanel(estrusAlerts, readings, isCompact: true),
                       const SizedBox(height: 12),
                       // CENTER — Gestaciones activas
-                      SizedBox(
-                        height: 350,
-                        child: _buildGestationPanel(),
-                      ),
+                      _buildGestationPanel(isCompact: true),
+                      const SizedBox(height: 12),
+                      // CENTER BOTTOM — Registrar Evento Reproductivo
+                      _buildRegisterEventPanel(),
                       const SizedBox(height: 12),
                       // RIGHT — Timeline de eventos
-                      SizedBox(
-                        height: 400,
-                        child: _buildTimelinePanel(),
-                      ),
+                      _buildTimelinePanel(isCompact: true),
+                      const SizedBox(height: 24),
                     ],
                   ),
                 );
               }
-              return Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // LEFT — IoT Celo en tiempo real
-                  Expanded(
-                    flex: 3,
-                    child: _buildCeloPanel(estrusAlerts, readings),
-                  ),
-                  const SizedBox(width: 8),
+              return Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // LEFT — IoT Celo en tiempo real
+                    Expanded(
+                      flex: 3,
+                      child: _buildCeloPanel(estrusAlerts, readings),
+                    ),
+                    const SizedBox(width: 10),
 
-                  // CENTER — Gestaciones activas
-                  Expanded(
-                    flex: 4,
-                    child: _buildGestationPanel(),
-                  ),
-                  const SizedBox(width: 8),
+                    // CENTER — Gestaciones activas + Registrar Evento abajo
+                    Expanded(
+                      flex: 4,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          _buildGestationPanel(isCompact: true),
+                          const SizedBox(height: 10),
+                          _buildRegisterEventPanel(),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 10),
 
-                  // RIGHT — Timeline de eventos
-                  Expanded(
-                    flex: 3,
-                    child: _buildTimelinePanel(),
-                  ),
-                ],
+                    // RIGHT — Timeline de eventos
+                    Expanded(
+                      flex: 3,
+                      child: _buildTimelinePanel(),
+                    ),
+                  ],
+                ),
               );
             },
           ),
@@ -212,10 +230,10 @@ class _ReproductiveScreenState extends State<ReproductiveScreen> {
 
   Widget _buildCeloPanel(
     Map<String, ReproductionAlert> alerts,
-    Map<String, SensorReading> readings,
-  ) {
+    Map<String, SensorReading> readings, {
+    bool isCompact = false,
+  }) {
     return Container(
-      margin: EdgeInsets.fromLTRB(16, 0, 0, 12),
       decoration: BoxDecoration(
         color: AppTheme.card,
         borderRadius: BorderRadius.circular(10),
@@ -223,17 +241,18 @@ class _ReproductiveScreenState extends State<ReproductiveScreen> {
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: isCompact ? MainAxisSize.min : MainAxisSize.max,
         children: [
           // Header
           Container(
-            padding: EdgeInsets.all(12),
+            padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               border: Border(bottom: BorderSide(color: AppTheme.divider)),
             ),
             child: Row(
               children: [
-                Icon(Icons.favorite_rounded, size: 16, color: Colors.pinkAccent),
-                SizedBox(width: 6),
+                const Icon(Icons.favorite_rounded, size: 16, color: Colors.pinkAccent),
+                const SizedBox(width: 6),
                 Text('Celo en Tiempo Real',
                     style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600,
                         color: AppTheme.textPrimary)),
@@ -245,7 +264,7 @@ class _ReproductiveScreenState extends State<ReproductiveScreen> {
                     color: alerts.isNotEmpty ? Colors.pinkAccent : AppTheme.textSecondary,
                   ),
                 ),
-                SizedBox(width: 4),
+                const SizedBox(width: 4),
                 Text(alerts.isNotEmpty ? '${alerts.length} activo' : 'Sin alertas',
                     style: TextStyle(fontSize: 10, color: AppTheme.textSecondary)),
               ],
@@ -259,8 +278,8 @@ class _ReproductiveScreenState extends State<ReproductiveScreen> {
                 .toList();
             if (dangerousReadings.isEmpty) return const SizedBox.shrink();
             return Container(
-              margin: EdgeInsets.fromLTRB(8, 8, 8, 0),
-              padding: EdgeInsets.all(8),
+              margin: const EdgeInsets.fromLTRB(8, 8, 8, 0),
+              padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
                 color: AppTheme.thiDanger.withAlpha(15),
                 borderRadius: BorderRadius.circular(6),
@@ -282,35 +301,76 @@ class _ReproductiveScreenState extends State<ReproductiveScreen> {
           }),
 
           // Alerts List
-          Expanded(
-            child: alerts.isEmpty
-                ? Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.monitor_heart_outlined, size: 32,
-                            color: AppTheme.textSecondary.withAlpha(80)),
-                        SizedBox(height: 8),
-                        Text('Monitoreando actividad...',
-                            style: TextStyle(fontSize: 12, color: AppTheme.textSecondary)),
-                        SizedBox(height: 4),
-                        Text('Las alertas de celo aparecerán aquí',
-                            style: TextStyle(fontSize: 10, color: AppTheme.textSecondary.withAlpha(120))),
-                      ],
+          if (isCompact)
+            alerts.isEmpty
+                ? Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 12),
+                    child: Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.monitor_heart_outlined, size: 28,
+                              color: AppTheme.textSecondary.withAlpha(80)),
+                          const SizedBox(height: 6),
+                          Text('Monitoreando actividad por collares IoT...',
+                              style: TextStyle(fontSize: 11, color: AppTheme.textSecondary)),
+                        ],
+                      ),
                     ),
                   )
                 : ListView(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
                     padding: const EdgeInsets.all(8),
                     children: alerts.values.map((alert) {
                       final reading = readings[alert.deviceId];
-                      return _CeloAlertCard(alert: alert, reading: reading);
+                      return _CeloAlertCard(
+                        alert: alert,
+                        reading: reading,
+                        onScheduleIA: () => _openAddDialog(
+                          defaultType: 'artificial_insemination',
+                          animalId: int.tryParse(alert.deviceId),
+                        ),
+                      );
                     }).toList(),
-                  ),
-          ),
+                  )
+          else
+            Expanded(
+              child: alerts.isEmpty
+                  ? Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.monitor_heart_outlined, size: 32,
+                              color: AppTheme.textSecondary.withAlpha(80)),
+                          const SizedBox(height: 8),
+                          Text('Monitoreando actividad...',
+                              style: TextStyle(fontSize: 12, color: AppTheme.textSecondary)),
+                          const SizedBox(height: 4),
+                          Text('Las alertas de celo aparecerán aquí',
+                              style: TextStyle(fontSize: 10, color: AppTheme.textSecondary.withAlpha(120))),
+                        ],
+                      ),
+                    )
+                  : ListView(
+                      padding: const EdgeInsets.all(8),
+                      children: alerts.values.map((alert) {
+                        final reading = readings[alert.deviceId];
+                        return _CeloAlertCard(
+                          alert: alert,
+                          reading: reading,
+                          onScheduleIA: () => _openAddDialog(
+                            defaultType: 'artificial_insemination',
+                            animalId: int.tryParse(alert.deviceId),
+                          ),
+                        );
+                      }).toList(),
+                    ),
+            ),
 
           // All cows activity summary
           Container(
-            padding: EdgeInsets.all(10),
+            padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
               border: Border(top: BorderSide(color: AppTheme.divider)),
             ),
@@ -334,7 +394,7 @@ class _ReproductiveScreenState extends State<ReproductiveScreen> {
                     child: Row(
                       children: [
                         SizedBox(
-                          width: 60,
+                          width: 64,
                           child: Text(r.animalName.isNotEmpty ? r.animalName : r.deviceId,
                               style: TextStyle(fontSize: 10, color: AppTheme.textSecondary),
                               overflow: TextOverflow.ellipsis),
@@ -369,7 +429,7 @@ class _ReproductiveScreenState extends State<ReproductiveScreen> {
 
   // ─── CENTER PANEL: Gestation Calendar ─────────────────────────
 
-  Widget _buildGestationPanel() {
+  Widget _buildGestationPanel({bool isCompact = false}) {
     final gestations = _events.where((e) =>
         e.expectedBirthDate != null &&
         e.expectedBirthDate!.isAfter(DateTime.now().subtract(const Duration(days: 30)))
@@ -377,7 +437,6 @@ class _ReproductiveScreenState extends State<ReproductiveScreen> {
       ..sort((a, b) => a.expectedBirthDate!.compareTo(b.expectedBirthDate!));
 
     return Container(
-      margin: EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color: AppTheme.card,
         borderRadius: BorderRadius.circular(10),
@@ -385,55 +444,83 @@ class _ReproductiveScreenState extends State<ReproductiveScreen> {
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: isCompact ? MainAxisSize.min : MainAxisSize.max,
         children: [
           // Header
           Container(
-            padding: EdgeInsets.all(12),
+            padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               border: Border(bottom: BorderSide(color: AppTheme.divider)),
             ),
             child: Row(
               children: [
-                Icon(Icons.calendar_month_rounded, size: 16, color: const Color(0xFFAB47BC)),
-                SizedBox(width: 6),
+                const Icon(Icons.calendar_month_rounded, size: 16, color: Color(0xFFAB47BC)),
+                const SizedBox(width: 6),
                 Text('Gestaciones Activas',
                     style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600,
                         color: AppTheme.textPrimary)),
                 const Spacer(),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFAB47BC).withAlpha(20),
-                    borderRadius: BorderRadius.circular(10),
+                InkWell(
+                  onTap: () => _openAddDialog(defaultType: 'artificial_insemination'),
+                  borderRadius: BorderRadius.circular(6),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFAB47BC).withAlpha(20),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.add, size: 12, color: Color(0xFFAB47BC)),
+                        const SizedBox(width: 2),
+                        Text('${gestations.length} activas',
+                            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700,
+                                color: Color(0xFFAB47BC))),
+                      ],
+                    ),
                   ),
-                  child: Text('${gestations.length}',
-                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700,
-                          color: const Color(0xFFAB47BC))),
                 ),
               ],
             ),
           ),
 
           // Gantt-like gestation bars
-          Expanded(
-            child: gestations.isEmpty
-                ? Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.pregnant_woman_rounded, size: 32,
-                            color: AppTheme.textSecondary.withAlpha(80)),
-                        SizedBox(height: 8),
-                        Text('Sin gestaciones activas',
-                            style: TextStyle(fontSize: 12, color: AppTheme.textSecondary)),
-                      ],
+          if (isCompact)
+            gestations.isEmpty
+                ? Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 12),
+                    child: Center(
+                      child: Text('Sin gestaciones activas registradas',
+                          style: TextStyle(fontSize: 12, color: AppTheme.textSecondary)),
                     ),
                   )
                 : ListView(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
                     padding: const EdgeInsets.all(10),
                     children: gestations.map((e) => _GestationBar(event: e)).toList(),
-                  ),
-          ),
+                  )
+          else
+            Expanded(
+              child: gestations.isEmpty
+                  ? Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.pregnant_woman_rounded, size: 32,
+                              color: AppTheme.textSecondary.withAlpha(80)),
+                          const SizedBox(height: 8),
+                          Text('Sin gestaciones activas',
+                              style: TextStyle(fontSize: 12, color: AppTheme.textSecondary)),
+                        ],
+                      ),
+                    )
+                  : ListView(
+                      padding: const EdgeInsets.all(10),
+                      children: gestations.map((e) => _GestationBar(event: e)).toList(),
+                    ),
+            ),
 
           // Summer heat warning
           Builder(builder: (context) {
@@ -443,8 +530,8 @@ class _ReproductiveScreenState extends State<ReproductiveScreen> {
             }).toList();
             if (summerBirths.isEmpty) return const SizedBox.shrink();
             return Container(
-              margin: EdgeInsets.fromLTRB(8, 0, 8, 8),
-              padding: EdgeInsets.all(8),
+              margin: const EdgeInsets.fromLTRB(8, 0, 8, 8),
+              padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
                 color: AppTheme.thiDanger.withAlpha(12),
                 borderRadius: BorderRadius.circular(6),
@@ -469,15 +556,82 @@ class _ReproductiveScreenState extends State<ReproductiveScreen> {
     );
   }
 
+  // ─── CENTER BOTTOM: Registrar Evento Reproductivo Panel ───────
+
+  Widget _buildRegisterEventPanel() {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppTheme.card,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: const Color(0xFFAB47BC).withAlpha(60)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.add_circle_outline_rounded, size: 16, color: Color(0xFFAB47BC)),
+              const SizedBox(width: 6),
+              Text(
+                'Registrar Evento Reproductivo',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: AppTheme.textPrimary,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'IA, monta natural, palpación o parto con cálculo de 283 días',
+            style: TextStyle(fontSize: 10, color: AppTheme.textSecondary),
+          ),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: [
+              _QuickActionButton(
+                icon: Icons.science_rounded,
+                label: 'IA (Inseminación)',
+                color: AppTheme.secondary,
+                onTap: () => _openAddDialog(defaultType: 'artificial_insemination'),
+              ),
+              _QuickActionButton(
+                icon: Icons.pets_rounded,
+                label: 'Monta Natural',
+                color: const Color(0xFFFF9800),
+                onTap: () => _openAddDialog(defaultType: 'mating'),
+              ),
+              _QuickActionButton(
+                icon: Icons.pregnant_woman_rounded,
+                label: 'Palpación / Diagnóstico',
+                color: const Color(0xFFAB47BC),
+                onTap: () => _openAddDialog(defaultType: 'pregnancy_check'),
+              ),
+              _QuickActionButton(
+                icon: Icons.child_care_rounded,
+                label: 'Registrar Parto',
+                color: AppTheme.primary,
+                onTap: () => _openAddDialog(defaultType: 'birth'),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
   // ─── RIGHT PANEL: Improved Event Timeline ─────────────────────
 
-  Widget _buildTimelinePanel() {
+  Widget _buildTimelinePanel({bool isCompact = false}) {
     final filtered = _filterType == 'all'
         ? _events
         : _events.where((e) => e.eventType == _filterType).toList();
 
     return Container(
-      margin: EdgeInsets.fromLTRB(0, 0, 16, 12),
       decoration: BoxDecoration(
         color: AppTheme.card,
         borderRadius: BorderRadius.circular(10),
@@ -485,18 +639,19 @@ class _ReproductiveScreenState extends State<ReproductiveScreen> {
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: isCompact ? MainAxisSize.min : MainAxisSize.max,
         children: [
           // Header + Filter
           Container(
-            padding: EdgeInsets.all(12),
+            padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               border: Border(bottom: BorderSide(color: AppTheme.divider)),
             ),
             child: Row(
               children: [
                 Icon(Icons.timeline_rounded, size: 16, color: AppTheme.textSecondary),
-                SizedBox(width: 6),
-                Text('Eventos',
+                const SizedBox(width: 6),
+                Text('Historial de Eventos',
                     style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600,
                         color: AppTheme.textPrimary)),
                 const Spacer(),
@@ -509,21 +664,41 @@ class _ReproductiveScreenState extends State<ReproductiveScreen> {
           ),
 
           // Event list
-          Expanded(
-            child: filtered.isEmpty
-                ? Center(
-                    child: Text('Sin eventos de este tipo',
-                        style: TextStyle(fontSize: 12, color: AppTheme.textSecondary)),
+          if (isCompact)
+            filtered.isEmpty
+                ? Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 12),
+                    child: Center(
+                      child: Text('Sin eventos de este tipo',
+                          style: TextStyle(fontSize: 12, color: AppTheme.textSecondary)),
+                    ),
                   )
                 : ListView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
                     padding: const EdgeInsets.all(8),
                     itemCount: filtered.length,
                     itemBuilder: (context, index) => _EventCard(
-                      event: filtered[index],
+                      item: filtered[index],
                       isLast: index == filtered.length - 1,
                     ),
-                  ),
-          ),
+                  )
+          else
+            Expanded(
+              child: filtered.isEmpty
+                  ? Center(
+                      child: Text('Sin eventos de este tipo',
+                          style: TextStyle(fontSize: 12, color: AppTheme.textSecondary)),
+                    )
+                  : ListView.builder(
+                      padding: const EdgeInsets.all(8),
+                      itemCount: filtered.length,
+                      itemBuilder: (context, index) => _EventCard(
+                        item: filtered[index],
+                        isLast: index == filtered.length - 1,
+                      ),
+                    ),
+            ),
         ],
       ),
     );
@@ -547,12 +722,12 @@ class _KpiChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 80,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(icon, size: 16, color: color),
-          SizedBox(height: 2),
+          const SizedBox(height: 2),
           Text(value, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: color)),
           Text(label, style: TextStyle(fontSize: 9, color: AppTheme.textSecondary), textAlign: TextAlign.center),
         ],
@@ -566,8 +741,9 @@ class _KpiChip extends StatelessWidget {
 class _CeloAlertCard extends StatelessWidget {
   final ReproductionAlert alert;
   final SensorReading? reading;
+  final VoidCallback? onScheduleIA;
 
-  const _CeloAlertCard({required this.alert, this.reading});
+  const _CeloAlertCard({required this.alert, this.reading, this.onScheduleIA});
 
   @override
   Widget build(BuildContext context) {
@@ -584,7 +760,7 @@ class _CeloAlertCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(Icons.favorite_rounded, size: 14, color: Colors.pinkAccent),
+              const Icon(Icons.favorite_rounded, size: 14, color: Colors.pinkAccent),
               const SizedBox(width: 4),
               Expanded(
                 child: Text(
@@ -601,7 +777,7 @@ class _CeloAlertCard extends StatelessWidget {
                 ),
                 child: Text(
                   '${(alert.activityScore * 100).toStringAsFixed(0)}%',
-                  style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700,
+                  style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700,
                       color: Colors.pinkAccent),
                 ),
               ),
@@ -618,28 +794,31 @@ class _CeloAlertCard extends StatelessWidget {
               minHeight: 4,
             ),
           ),
-          SizedBox(height: 6),
+          const SizedBox(height: 6),
           Row(
             children: [
               Icon(Icons.directions_walk_rounded, size: 12, color: AppTheme.textSecondary),
-              SizedBox(width: 4),
+              const SizedBox(width: 4),
               Text('Mov: ${alert.movementIntensity.toStringAsFixed(1)}',
                   style: TextStyle(fontSize: 10, color: AppTheme.textSecondary)),
-              Spacer(),
+              const Spacer(),
               if (reading != null) ...[
                 Icon(Icons.thermostat_rounded, size: 12, color: AppTheme.textSecondary),
-                SizedBox(width: 2),
+                const SizedBox(width: 2),
                 Text('THI: ${reading!.thi.toStringAsFixed(0)}',
                     style: TextStyle(fontSize: 10,
                         color: AppTheme.thiColor(reading!.thiLevel))),
               ],
             ],
           ),
-          const SizedBox(height: 4),
-          Text(
-            'Programar inseminación',
-            style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600,
-                color: Colors.pinkAccent, decoration: TextDecoration.underline),
+          const SizedBox(height: 6),
+          InkWell(
+            onTap: onScheduleIA,
+            child: const Text(
+              'Programar inseminación',
+              style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600,
+                  color: Colors.pinkAccent, decoration: TextDecoration.underline),
+            ),
           ),
         ],
       ),
@@ -795,24 +974,31 @@ class _FilterDropdown extends StatelessWidget {
 // ─── Event Timeline Card ────────────────────────────────────────
 
 class _EventCard extends StatelessWidget {
-  final ReproductiveEvent event;
+  final ReproductiveEvent item;
   final bool isLast;
 
-  const _EventCard({required this.event, this.isLast = false});
+  const _EventCard({required this.item, this.isLast = false});
 
   @override
   Widget build(BuildContext context) {
-    final eventColor = switch (event.eventType) {
+    final eventType = item.eventType;
+    final recDate = item.recordedAt;
+    final expDate = item.expectedBirthDate;
+    final pConfirmed = item.pregnancyConfirmed;
+    final bull = item.bullOrSemen;
+    final notes = item.notes;
+
+    final eventColor = switch (eventType) {
       'heat_detected' => Colors.pinkAccent,
       'mating' || 'artificial_insemination' => AppTheme.secondary,
-      'pregnancy_check' => Color(0xFFAB47BC),
+      'pregnancy_check' => const Color(0xFFAB47BC),
       'birth' => AppTheme.primary,
-      'weaning' => Color(0xFF42A5F5),
+      'weaning' => const Color(0xFF42A5F5),
       'abortion' => AppTheme.thiDanger,
       _ => AppTheme.textSecondary,
     };
 
-    final eventIcon = switch (event.eventType) {
+    final eventIcon = switch (eventType) {
       'heat_detected' => Icons.favorite_rounded,
       'mating' => Icons.pets_rounded,
       'artificial_insemination' => Icons.science_rounded,
@@ -823,7 +1009,7 @@ class _EventCard extends StatelessWidget {
       _ => Icons.event_rounded,
     };
 
-    final eventLabel = switch (event.eventType) {
+    final eventLabel = switch (eventType) {
       'heat_detected' => 'Celo detectado',
       'mating' => 'Monta natural',
       'artificial_insemination' => 'Inseminación artificial',
@@ -859,8 +1045,8 @@ class _EventCard extends StatelessWidget {
           // Card
           Expanded(
             child: Container(
-              margin: EdgeInsets.only(bottom: 8),
-              padding: EdgeInsets.all(10),
+              margin: const EdgeInsets.only(bottom: 8),
+              padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
                 color: AppTheme.surface,
                 borderRadius: BorderRadius.circular(8),
@@ -878,57 +1064,57 @@ class _EventCard extends StatelessWidget {
                             style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600,
                                 color: eventColor)),
                       ),
-                      if (event.recordedAt != null)
-                        Text('${event.recordedAt!.day}/${event.recordedAt!.month}',
+                      if (recDate != null)
+                        Text('${recDate.day}/${recDate.month}',
                             style: TextStyle(fontSize: 9, color: AppTheme.textSecondary)),
                     ],
                   ),
-                  if (event.bullOrSemen != null) ...[
-                    SizedBox(height: 4),
+                  if (bull != null) ...[
+                    const SizedBox(height: 4),
                     Row(
                       children: [
                         Icon(Icons.pets_rounded, size: 10, color: AppTheme.textSecondary),
-                        SizedBox(width: 3),
+                        const SizedBox(width: 3),
                         Expanded(
-                          child: Text(event.bullOrSemen!,
+                          child: Text(bull,
                               style: TextStyle(fontSize: 10, color: AppTheme.textPrimary),
                               overflow: TextOverflow.ellipsis),
                         ),
                       ],
                     ),
                   ],
-                  if (event.pregnancyConfirmed != null) ...[
+                  if (pConfirmed != null) ...[
                     const SizedBox(height: 3),
                     Row(
                       children: [
                         Icon(
-                          event.pregnancyConfirmed! ? Icons.check_circle_rounded : Icons.cancel_rounded,
+                          pConfirmed ? Icons.check_circle_rounded : Icons.cancel_rounded,
                           size: 10,
-                          color: event.pregnancyConfirmed! ? AppTheme.primary : AppTheme.thiDanger,
+                          color: pConfirmed ? AppTheme.primary : AppTheme.thiDanger,
                         ),
                         const SizedBox(width: 3),
                         Text(
-                          event.pregnancyConfirmed! ? 'Confirmada' : 'No gestante',
+                          pConfirmed ? 'Confirmada' : 'No gestante',
                           style: TextStyle(fontSize: 10,
-                              color: event.pregnancyConfirmed! ? AppTheme.primary : AppTheme.thiDanger),
+                              color: pConfirmed ? AppTheme.primary : AppTheme.thiDanger),
                         ),
                       ],
                     ),
                   ],
-                  if (event.expectedBirthDate != null) ...[
+                  if (expDate != null) ...[
                     const SizedBox(height: 3),
                     Row(
                       children: [
-                        Icon(Icons.calendar_today_rounded, size: 10, color: Colors.pinkAccent),
+                        const Icon(Icons.calendar_today_rounded, size: 10, color: Colors.pinkAccent),
                         const SizedBox(width: 3),
-                        Text('Parto: ${event.expectedBirthDate!.day}/${event.expectedBirthDate!.month}/${event.expectedBirthDate!.year}',
-                            style: TextStyle(fontSize: 9, color: Colors.pinkAccent)),
+                        Text('Parto: ${expDate.day}/${expDate.month}/${expDate.year}',
+                            style: const TextStyle(fontSize: 9, color: Colors.pinkAccent)),
                       ],
                     ),
                   ],
-                  if (event.notes != null) ...[
-                    SizedBox(height: 4),
-                    Text(event.notes!,
+                  if (notes != null) ...[
+                    const SizedBox(height: 4),
+                    Text(notes,
                         style: TextStyle(fontSize: 9, color: AppTheme.textSecondary),
                         maxLines: 2, overflow: TextOverflow.ellipsis),
                   ],
@@ -937,6 +1123,51 @@ class _EventCard extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _QuickActionButton extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _QuickActionButton({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: color.withAlpha(15),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: color.withAlpha(50)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 14, color: color),
+            const SizedBox(width: 5),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                color: color,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

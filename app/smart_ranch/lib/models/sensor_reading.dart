@@ -15,6 +15,8 @@ class SensorReading {
   final double movementIntensity;
   final double estrusScore;       // 0.0-1.0, high = possible estrus
   final String healthStatus;      // 'healthy', 'fever', 'lethargy', 'sick_suspected'
+  final double batteryPercent;    // 0-100%
+  final double batteryVoltage;    // 3.0 - 4.2V
   final DateTime timestamp;
 
   SensorReading({
@@ -31,6 +33,8 @@ class SensorReading {
     this.movementIntensity = 0,
     this.estrusScore = 0,
     this.healthStatus = 'healthy',
+    this.batteryPercent = 88.0,
+    this.batteryVoltage = 4.05,
     DateTime? timestamp,
   }) : timestamp = timestamp ?? DateTime.now();
 
@@ -71,6 +75,8 @@ class SensorReading {
       movementIntensity: (data['movement_intensity'] as num?)?.toDouble() ?? 0,
       estrusScore: (data['estrus_score'] as num?)?.toDouble() ?? 0,
       healthStatus: data['health_status'] as String? ?? 'healthy',
+      batteryPercent: (data['battery_pct'] as num?)?.toDouble() ?? 88.0,
+      batteryVoltage: (data['battery_v'] as num?)?.toDouble() ?? 4.05,
     );
   }
 
@@ -90,6 +96,8 @@ class SensorReading {
       movementIntensity: (data['movement_intensity'] as num?)?.toDouble() ?? 0,
       estrusScore: (data['estrus_score'] as num?)?.toDouble() ?? 0,
       healthStatus: data['health_status'] as String? ?? 'healthy',
+      batteryPercent: (data['battery_pct'] as num?)?.toDouble() ?? 88.0,
+      batteryVoltage: (data['battery_v'] as num?)?.toDouble() ?? 4.05,
       timestamp: data['timestamp'] != null
           ? DateTime.tryParse(data['timestamp'] as String) ?? DateTime.now()
           : DateTime.now(),
