@@ -1,5 +1,8 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../config/app_theme.dart';
+import '../models/ranch_models.dart';
 import '../services/ranch_api_service.dart';
 import '../widgets/crud_dialogs.dart';
 
@@ -45,73 +48,9 @@ class HerdScreen extends StatefulWidget {
 }
 
 class _HerdScreenState extends State<HerdScreen> {
-  final List<AnimalProfile> _animals = [
-    AnimalProfile(
-      id: 1,
-      siniigaTag: 'MX-0026-0001',
-      deviceId: 'COL-NFC-001',
-      name: 'Lupita',
-      breed: 'Hereford',
-      sex: 'hembra',
-      category: 'vaca',
-      birthDate: '2022-03-15',
-      weightKg: 420,
-      pasture: 'Potrero Norte',
-      batteryLevel: 94,
-    ),
-    AnimalProfile(
-      id: 2,
-      siniigaTag: 'MX-0026-0002',
-      deviceId: 'COL-NFC-002',
-      name: 'Estrella',
-      breed: 'Angus',
-      sex: 'hembra',
-      category: 'vaca',
-      birthDate: '2021-06-22',
-      weightKg: 380,
-      pasture: 'Potrero Norte',
-      batteryLevel: 88,
-    ),
-    AnimalProfile(
-      id: 3,
-      siniigaTag: 'MX-0026-0003',
-      deviceId: 'COL-NFC-003',
-      name: 'Canela',
-      breed: 'Charolais',
-      sex: 'hembra',
-      category: 'vaca',
-      birthDate: '2023-01-10',
-      weightKg: 350,
-      pasture: 'Corral Principal',
-      batteryLevel: 91,
-    ),
-    AnimalProfile(
-      id: 4,
-      siniigaTag: 'MX-0026-0004',
-      deviceId: 'COL-NFC-004',
-      name: 'Luna',
-      breed: 'Brahman',
-      sex: 'hembra',
-      category: 'vaca',
-      birthDate: '2020-09-05',
-      weightKg: 450,
-      pasture: 'Potrero Sur',
-      batteryLevel: 79,
-    ),
-    AnimalProfile(
-      id: 5,
-      siniigaTag: 'MX-0026-0005',
-      deviceId: 'COL-NFC-005',
-      name: 'Valentina',
-      breed: 'Simmental',
-      sex: 'hembra',
-      category: 'vaca',
-      birthDate: '2022-11-18',
-      weightKg: 400,
-      pasture: 'Potrero Sur',
-      batteryLevel: 95,
-    ),
-  ];
+  List<AnimalProfile> _animals = [];
+  bool _isLoading = false;
+  StreamSubscription? _animalsSub;
 
   String _searchQuery = '';
   String? _filterBreed;
@@ -121,10 +60,31 @@ class _HerdScreenState extends State<HerdScreen> {
   void initState() {
     super.initState();
     _loadAnimals();
+    _initFirestoreAnimals();
+  }
+
+  @override
+  void dispose() {
+    _animalsSub?.cancel();
+    super.dispose();
+  }
+
+  void _initFirestoreAnimals() {
+    try {
+      _animalsSub = FirebaseFirestore.instance.collection('animals').snapshots().listen((snapshot) {
+        if (!mounted) return;
+        _loadAnimals();
+      }, onError: (e) => debugPrint('Firestore animals stream error: $e'));
+    } catch (e) {
+      debugPrint('Firestore animals init error: $e');
+    }
   }
 
   Future<void> _loadAnimals() async {
+    if (!mounted) return;
+    setState(() => _isLoading = true);
     try {
+      final animals = await RanchApiService.getAnimals();
       final records = await RanchApiService.getWeightRecords();
       final latestWeight = <int, double>{};
       for (final r in records) {
@@ -132,30 +92,29 @@ class _HerdScreenState extends State<HerdScreen> {
           latestWeight[r.animalId] = r.weightKg;
         }
       }
+      if (!mounted) return;
       setState(() {
-        for (var i = 0; i < _animals.length; i++) {
-          final aid = _animals[i].id;
-          if (latestWeight.containsKey(aid)) {
-            final a = _animals[i];
-            _animals[i] = AnimalProfile(
-              id: a.id,
-              siniigaTag: a.siniigaTag,
-              deviceId: a.deviceId,
-              name: a.name,
-              breed: a.breed,
-              sex: a.sex,
-              category: a.category,
-              birthDate: a.birthDate,
-              weightKg: latestWeight[aid],
-              pasture: a.pasture,
-              status: a.status,
-              notes: a.notes,
-              batteryLevel: a.batteryLevel,
-            );
-          }
-        }
+        _animals = animals.map((a) => AnimalProfile(
+          id: a.id,
+          siniigaTag: (a.earTag != null && a.earTag!.isNotEmpty) ? a.earTag! : 'S/N',
+          deviceId: a.deviceId ?? '',
+          name: a.name,
+          breed: a.breed ?? 'Brangus',
+          sex: a.sex,
+          category: a.category,
+          birthDate: a.birthDate != null ? a.birthDate!.toIso8601String().split('T').first : null,
+          weightKg: latestWeight[a.id] ?? a.weightKg,
+          pasture: 'Potrero Principal',
+          status: a.status,
+          notes: a.notes ?? '',
+          batteryLevel: 92,
+        )).toList();
+        _isLoading = false;
       });
-    } catch (_) {}
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+    }
   }
 
   List<AnimalProfile> get _filteredAnimals {
@@ -585,6 +544,27 @@ class _HerdScreenState extends State<HerdScreen> {
                       onDeleted: () => setState(() => _filterBreed = null),
                     ),
                   ],
+
+                  const SizedBox(width: 8),
+
+                  // Add animal button
+                  ElevatedButton.icon(
+                    onPressed: () async {
+                      final saved = await showAddAnimalDialog(context);
+                      if (saved == true) {
+                        _loadAnimals();
+                      }
+                    },
+                    icon: const Icon(Icons.add_rounded, size: 16),
+                    label: const Text('Registrar', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppTheme.primary,
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
+                  ),
                 ],
               ),
             ],
@@ -601,49 +581,73 @@ class _HerdScreenState extends State<HerdScreen> {
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(color: AppTheme.divider),
               ),
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  return SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: SizedBox(
-                      width: constraints.maxWidth > 850 ? constraints.maxWidth : 850,
-                      child: Column(
-                        children: [
-                          // Column Headers
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 16, vertical: 10),
-                            decoration: BoxDecoration(
-                              color: AppTheme.surfaceVariant,
-                              borderRadius: const BorderRadius.vertical(
-                                  top: Radius.circular(10)),
+              child: filtered.isEmpty
+                  ? Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(32),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.pets_outlined, size: 48, color: AppTheme.textSecondary.withAlpha(120)),
+                            const SizedBox(height: 12),
+                            Text(
+                              _searchQuery.isNotEmpty
+                                  ? 'No se encontraron animales con ese criterio'
+                                  : 'No hay ganado registrado en este rancho',
+                              style: TextStyle(color: AppTheme.textPrimary, fontWeight: FontWeight.w600, fontSize: 15),
                             ),
-                            child: Row(
-                              children: const [
-                                _ColHeader('ID', flex: 1),
-                                _ColHeader('Nombre', flex: 2),
-                                _ColHeader('Arete SINIIGA', flex: 2),
-                                _ColHeader('Raza', flex: 2),
-                                _ColHeader('Sexo', flex: 1),
-                                _ColHeader('Peso', flex: 1),
-                                _ColHeader('Potrero', flex: 2),
-                                _ColHeader('Sensor / Collar', flex: 2),
-                              ],
+                            const SizedBox(height: 6),
+                            Text(
+                              'Presiona "Registrar" para dar de alta animales con su arete y collar.',
+                              style: TextStyle(color: AppTheme.textSecondary, fontSize: 12),
                             ),
-                          ),
-                          Divider(height: 1, color: AppTheme.divider),
+                          ],
+                        ),
+                      ),
+                    )
+                  : LayoutBuilder(
+                      builder: (context, constraints) {
+                        return SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: SizedBox(
+                            width: constraints.maxWidth > 850 ? constraints.maxWidth : 850,
+                            child: Column(
+                              children: [
+                                // Column Headers
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 16, vertical: 10),
+                                  decoration: BoxDecoration(
+                                    color: AppTheme.surfaceVariant,
+                                    borderRadius: const BorderRadius.vertical(
+                                        top: Radius.circular(10)),
+                                  ),
+                                  child: Row(
+                                    children: const [
+                                      _ColHeader('ID', flex: 1),
+                                      _ColHeader('Nombre', flex: 2),
+                                      _ColHeader('Arete SINIIGA', flex: 2),
+                                      _ColHeader('Raza', flex: 2),
+                                      _ColHeader('Sexo', flex: 1),
+                                      _ColHeader('Peso', flex: 1),
+                                      _ColHeader('Potrero', flex: 2),
+                                      _ColHeader('Sensor / Collar', flex: 2),
+                                    ],
+                                  ),
+                                ),
+                                Divider(height: 1, color: AppTheme.divider),
 
-                          // Rows
-                          Expanded(
-                            child: ListView.separated(
-                              itemCount: filtered.length,
-                              separatorBuilder: (_, __) => Divider(
-                                height: 1,
-                                color: AppTheme.divider,
-                              ),
-                              itemBuilder: (context, index) {
-                                final animal = filtered[index];
-                                final isHovered = _hoveredIndex == index;
+                                // Rows
+                                Expanded(
+                                  child: ListView.separated(
+                                    itemCount: filtered.length,
+                                    separatorBuilder: (_, __) => Divider(
+                                      height: 1,
+                                      color: AppTheme.divider,
+                                    ),
+                                    itemBuilder: (context, index) {
+                                      final animal = filtered[index];
+                                      final isHovered = _hoveredIndex == index;
 
                                 return InkWell(
                                   onTap: () => _showAnimalDetails(animal),

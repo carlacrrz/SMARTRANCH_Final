@@ -38,12 +38,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   // Step 3 — Geofencing (Puerto Peñasco, Sonora)
   static const _puertoPenascoLocation = LatLng(31.3172, -113.5377);
-  final List<LatLng> _polygonPoints = [
-    const LatLng(31.325, -113.545),
-    const LatLng(31.325, -113.525),
-    const LatLng(31.310, -113.525),
-    const LatLng(31.310, -113.545),
-  ];
+  final List<LatLng> _polygonPoints = [];
   final MapController _mapController = MapController();
 
   // Step 4 — Equipos
@@ -603,8 +598,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           // Polygon Vertices
                           ..._polygonPoints.asMap().entries.map((e) => Marker(
                             point: e.value,
-                            width: 22,
-                            height: 22,
+                            width: 24,
+                            height: 24,
                             child: Container(
                               decoration: BoxDecoration(
                                 color: AppTheme.primary,
@@ -614,7 +609,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               child: Center(
                                 child: Text(
                                   '${e.key + 1}',
-                                  style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold),
+                                  style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
                                 ),
                               ),
                             ),
@@ -623,34 +618,80 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       ),
                     ],
                   ),
-                  // Map Control Buttons
+                  // Empty state guidance banner
+                  if (_polygonPoints.isEmpty)
+                    Positioned(
+                      top: 14,
+                      left: 14,
+                      right: 14,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: AppTheme.card.withAlpha(230),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: AppTheme.primary.withAlpha(100)),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.touch_app_rounded, color: AppTheme.primary, size: 18),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'Toca en el mapa para marcar los vértices de tu rancho',
+                                style: TextStyle(color: AppTheme.textPrimary, fontSize: 11, fontWeight: FontWeight.w500),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  // Bottom Actions Toolbar
                   Positioned(
-                    top: 12,
+                    bottom: 12,
+                    left: 12,
                     right: 12,
-                    child: Column(
-                      children: [
-                        FloatingActionButton.small(
-                          heroTag: 'center_map_btn',
-                          backgroundColor: AppTheme.card,
-                          foregroundColor: AppTheme.primary,
-                          onPressed: () {
-                            _mapController.move(_puertoPenascoLocation, 13.5);
-                          },
-                          tooltip: 'Centrar en Puerto Peñasco',
-                          child: const Icon(Icons.my_location_rounded, size: 18),
-                        ),
-                        const SizedBox(height: 8),
-                        FloatingActionButton.small(
-                          heroTag: 'clear_poly_btn',
-                          backgroundColor: AppTheme.thiDanger,
-                          foregroundColor: Colors.white,
-                          onPressed: _polygonPoints.isEmpty
-                              ? null
-                              : () => setState(() => _polygonPoints.clear()),
-                          tooltip: 'Limpiar polígono',
-                          child: const Icon(Icons.delete_sweep_rounded, size: 18),
-                        ),
-                      ],
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: AppTheme.card.withAlpha(235),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: AppTheme.divider),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          TextButton.icon(
+                            onPressed: _polygonPoints.isNotEmpty
+                                ? () => setState(() => _polygonPoints.clear())
+                                : null,
+                            icon: const Icon(Icons.delete_outline_rounded, size: 16),
+                            label: const Text('Borrar selección', style: TextStyle(fontSize: 12)),
+                            style: TextButton.styleFrom(
+                              foregroundColor: AppTheme.thiEmergency,
+                              disabledForegroundColor: AppTheme.textSecondary.withAlpha(80),
+                            ),
+                          ),
+                          Container(height: 18, width: 1, color: AppTheme.divider),
+                          TextButton.icon(
+                            onPressed: _polygonPoints.isNotEmpty
+                                ? () => setState(() => _polygonPoints.removeLast())
+                                : null,
+                            icon: const Icon(Icons.undo_rounded, size: 16),
+                            label: const Text('Deshacer', style: TextStyle(fontSize: 12)),
+                            style: TextButton.styleFrom(
+                              foregroundColor: AppTheme.textPrimary,
+                              disabledForegroundColor: AppTheme.textSecondary.withAlpha(80),
+                            ),
+                          ),
+                          Container(height: 18, width: 1, color: AppTheme.divider),
+                          IconButton(
+                            onPressed: () => _mapController.move(_puertoPenascoLocation, 13.5),
+                            icon: const Icon(Icons.my_location_rounded, size: 18),
+                            color: AppTheme.primary,
+                            tooltip: 'Centrar en Puerto Peñasco',
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ],

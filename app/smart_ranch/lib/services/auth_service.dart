@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:latlong2/latlong.dart';
 import '../config/app_config.dart';
+import 'ranch_api_service.dart';
 
 /// Authentication service for JWT-based login/register and ranch metadata.
 class AuthService {
@@ -13,12 +14,7 @@ class AuthService {
   // Default Ranch in Puerto Peñasco, Sonora
   static LatLng ranchLocation = const LatLng(31.3172, -113.5377);
   static String ranchName = 'Rancho Puerto Peñasco';
-  static List<LatLng> geofencePolygon = [
-    const LatLng(31.325, -113.545),
-    const LatLng(31.325, -113.525),
-    const LatLng(31.310, -113.525),
-    const LatLng(31.310, -113.545),
-  ];
+  static List<LatLng> geofencePolygon = [];
 
   static bool get isAuthenticated => _token != null || _currentUser != null;
   static bool get isDemoMode => _isDemo;
@@ -34,6 +30,7 @@ class AuthService {
   /// Login with username and password.
   static Future<bool> login(String username, String password) async {
     _isDemo = false;
+    RanchApiService.initCleanData();
     try {
       final response = await http.post(
         Uri.parse('$_baseUrl/login'),
@@ -128,5 +125,6 @@ class AuthService {
       'role': 'admin',
       'ranch_name': 'Rancho Puerto Peñasco Demo',
     };
+    RanchApiService.initDemoData();
   }
 }

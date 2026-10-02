@@ -1,5 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import '../config/app_config.dart';
 import '../models/ranch_models.dart';
 import 'auth_service.dart';
@@ -76,23 +78,32 @@ class RanchApiService {
   }
 
   // ---- In-memory stores for offline/demo fallback ----
-  static final List<Animal> _localAnimals = [
-    Animal(id: 1, name: 'Lupita', earTag: 'MX-0026-0001', deviceId: 'vaca_001', breed: 'Hereford', sex: 'female', category: 'vaca', status: 'active', weightKg: 420),
-    Animal(id: 2, name: 'Estrella', earTag: 'MX-0026-0002', deviceId: 'vaca_002', breed: 'Angus', sex: 'female', category: 'vaca', status: 'active', weightKg: 380),
-    Animal(id: 3, name: 'Canela', earTag: 'MX-0026-0003', deviceId: 'vaca_003', breed: 'Charolais', sex: 'female', category: 'vaca', status: 'active', weightKg: 350),
-    Animal(id: 4, name: 'Luna', earTag: 'MX-0026-0004', deviceId: 'vaca_004', breed: 'Brahman', sex: 'female', category: 'vaca', status: 'active', weightKg: 450),
-    Animal(id: 5, name: 'Valentina', earTag: 'MX-0026-0005', deviceId: 'vaca_005', breed: 'Simmental', sex: 'female', category: 'vaca', status: 'active', weightKg: 400),
-  ];
+  static final List<Animal> _localAnimals = [];
+
+  static void initDemoData() {
+    _localAnimals.clear();
+    _localAnimals.addAll([
+      Animal(id: 1, name: 'Lupita', earTag: 'MX-0026-0001', deviceId: 'vaca_001', breed: 'Hereford', sex: 'female', category: 'vaca', status: 'active', weightKg: 420),
+      Animal(id: 2, name: 'Estrella', earTag: 'MX-0026-0002', deviceId: 'vaca_002', breed: 'Angus', sex: 'female', category: 'vaca', status: 'active', weightKg: 380),
+      Animal(id: 3, name: 'Canela', earTag: 'MX-0026-0003', deviceId: 'vaca_003', breed: 'Charolais', sex: 'female', category: 'vaca', status: 'active', weightKg: 350),
+      Animal(id: 4, name: 'Luna', earTag: 'MX-0026-0004', deviceId: 'vaca_004', breed: 'Brahman', sex: 'female', category: 'vaca', status: 'active', weightKg: 450),
+      Animal(id: 5, name: 'Valentina', earTag: 'MX-0026-0005', deviceId: 'vaca_005', breed: 'Simmental', sex: 'female', category: 'vaca', status: 'active', weightKg: 400),
+    ]);
+  }
+
+  static void initCleanData() {
+    _localAnimals.clear();
+    _localMedical.clear();
+    _localWeights.clear();
+    _localReproductive.clear();
+  }
 
   /// Initialize state for a newly registered real ranch account (Puerto Peñasco).
   static void initNewAccountRanch({
     required String ranchName,
     List<String>? initialDeviceIds,
   }) {
-    _localAnimals.clear();
-    _localMedical.clear();
-    _localWeights.clear();
-    _localReproductive.clear();
+    initCleanData();
 
     if (initialDeviceIds != null && initialDeviceIds.isNotEmpty) {
       for (int i = 0; i < initialDeviceIds.length; i++) {
@@ -222,6 +233,23 @@ class RanchApiService {
   }
 
   static Future<Animal> createAnimal(Map<String, dynamic> animalData) async {
+    try {
+      FirebaseFirestore.instance.collection('animals').add({
+        'name': animalData['name'],
+        'ear_tag': animalData['ear_tag'] ?? '',
+        'device_id': animalData['device_id'],
+        'breed': animalData['breed'] ?? 'Brangus',
+        'sex': animalData['sex'] ?? 'female',
+        'category': animalData['category'] ?? 'vaca',
+        'status': animalData['status'] ?? 'active',
+        'weight_kg': animalData['weight_kg'],
+        'notes': animalData['notes'],
+        'created_at': DateTime.now().toIso8601String(),
+      });
+    } catch (e) {
+      debugPrint('Firestore add animal: $e');
+    }
+
     try {
       final data = await _post('/animals', animalData);
       final animal = Animal.fromJson(data);
