@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../config/app_theme.dart';
 import '../services/auth_service.dart';
 import '../services/ranch_api_service.dart';
@@ -21,6 +22,7 @@ class _GpsMapScreenState extends State<GpsMapScreen> {
   List<Map<String, dynamic>> _positions = [];
   List<Map<String, dynamic>> _violations = [];
   StreamSubscription<Map<String, dynamic>>? _gpsSubscription;
+  StreamSubscription? _firestoreGpsSubscription;
   bool _mqttConnected = false;
   String? _selectedDeviceId;
 
@@ -91,12 +93,53 @@ class _GpsMapScreenState extends State<GpsMapScreen> {
     super.initState();
     _loadData();
     _connectMqtt();
+    _initFirestoreGps();
   }
 
   @override
   void dispose() {
     _gpsSubscription?.cancel();
+    _firestoreGpsSubscription?.cancel();
     super.dispose();
+  }
+
+  void _initFirestoreGps() {
+    try {
+      _firestoreGpsSubscription = FirebaseFirestore.instance
+          .collection('telemetry')
+          .snapshots()
+          .listen((snapshot) {
+        if (!mounted || snapshot.docs.isEmpty) return;
+        setState(() {
+          for (final doc in snapshot.docs) {
+            final data = doc.data();
+            final lat = (data['latitude'] as num?)?.toDouble();
+            final lng = (data['longitude'] as num?)?.toDouble();
+            if (lat != null && lng != null) {
+              final deviceId = (data['device_id'] as String?) ?? doc.id;
+              final idx = _positions.indexWhere((p) => p['device_id'] == deviceId);
+              final updated = {
+                'device_id': deviceId,
+                'animal_name': (data['animal_name'] as String?) ?? deviceId,
+                'latitude': lat,
+                'longitude': lng,
+                'speed': (data['speed'] as num?)?.toDouble() ?? 0.0,
+                'battery_v': (data['battery_voltage'] as num?)?.toDouble() ??
+                    (data['battery_v'] as num?)?.toDouble() ?? 4.0,
+                'current_zone': data['current_zone'] as String?,
+              };
+              if (idx >= 0) {
+                _positions[idx] = updated;
+              } else {
+                _positions.add(updated);
+              }
+            }
+          }
+        });
+      }, onError: (e) => debugPrint('Firestore GPS stream error: $e'));
+    } catch (e) {
+      debugPrint('Firestore GPS listener init error: $e');
+    }
   }
 
   void _connectMqtt() async {

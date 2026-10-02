@@ -29,6 +29,21 @@ class TroughReading {
     );
   }
 
+  factory TroughReading.fromFirestore(Map<String, dynamic> data, [String? docId]) {
+    return TroughReading(
+      troughId: (data['id'] as String?) ?? (data['trough_id'] as String?) ?? docId ?? 'bebedero',
+      troughName: (data['name'] as String?) ?? (data['trough_name'] as String?) ?? 'Bebedero',
+      levelPercent: (data['level_percent'] as num?)?.toDouble() ?? 0.0,
+      distanceCm: (data['distance_cm'] as num?)?.toDouble() ?? 0.0,
+      tankDepthCm: (data['tank_depth_cm'] as num?)?.toDouble() ?? 100.0,
+      timestamp: data['updated_at'] != null
+          ? (data['updated_at'] is int
+              ? DateTime.fromMillisecondsSinceEpoch(data['updated_at'] as int)
+              : DateTime.tryParse(data['updated_at'].toString()) ?? DateTime.now())
+          : DateTime.now(),
+    );
+  }
+
   /// Human-readable status.
   String get statusLabel {
     if (levelPercent <= 10) return '⚠️ Crítico';

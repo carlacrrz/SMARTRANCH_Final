@@ -103,4 +103,37 @@ class SensorReading {
           : DateTime.now(),
     );
   }
+
+  /// Parse from Firestore document data.
+  factory SensorReading.fromFirestore(Map<String, dynamic> data, [String? docId]) {
+    final ambientTemp = (data['ambient_temp'] as num?)?.toDouble() ?? 30.0;
+    final humidity = (data['humidity'] as num?)?.toDouble() ?? 40.0;
+    final computedThi = (data['thi'] as num?)?.toDouble() ?? calculateThi(ambientTemp, humidity);
+    final thiLevel = data['thi_level'] as String? ?? thiLevelFromValue(computedThi);
+
+    return SensorReading(
+      deviceId: (data['device_id'] as String?) ?? docId ?? 'unknown',
+      animalName: (data['animal_name'] as String?) ?? '',
+      bodyTemp: (data['body_temp'] as num?)?.toDouble() ?? 38.5,
+      ambientTemp: ambientTemp,
+      humidity: humidity,
+      thi: computedThi,
+      thiLevel: thiLevel,
+      accelX: (data['accel_x'] as num?)?.toDouble() ?? 0,
+      accelY: (data['accel_y'] as num?)?.toDouble() ?? 0,
+      accelZ: (data['accel_z'] as num?)?.toDouble() ?? 9.8,
+      movementIntensity: (data['activity_intensity'] as num?)?.toDouble() ??
+          (data['movement_intensity'] as num?)?.toDouble() ?? 0,
+      estrusScore: (data['estrus_score'] as num?)?.toDouble() ?? 0,
+      healthStatus: (data['health_status'] as String?) ?? 'healthy',
+      batteryPercent: (data['battery_pct'] as num?)?.toDouble() ?? 88.0,
+      batteryVoltage: (data['battery_voltage'] as num?)?.toDouble() ??
+          (data['battery_v'] as num?)?.toDouble() ?? 4.05,
+      timestamp: data['timestamp'] != null
+          ? (data['timestamp'] is int
+              ? DateTime.fromMillisecondsSinceEpoch(data['timestamp'] as int)
+              : DateTime.tryParse(data['timestamp'].toString()) ?? DateTime.now())
+          : DateTime.now(),
+    );
+  }
 }

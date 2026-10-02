@@ -8,9 +8,11 @@ import '../models/reproduction_alert.dart';
 import '../models/health_alert.dart';
 import '../models/trough_reading.dart';
 
-/// Demo service that simulates multiple ESP32 devices for testing
-/// without requiring MQTT broker infrastructure.
-/// Now includes estrus (celo) and health simulation.
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'auth_service.dart';
+
+/// Demo and Real-time Ranch Sync service that handles simulated ESP32 devices
+/// as well as real-time Cloud Firestore live telemetry streams.
 class DemoService extends ChangeNotifier {
   final List<_SimulatedAnimal> _animals = [
     _SimulatedAnimal('vaca_001', 'Lupita', false),
@@ -45,6 +47,10 @@ class DemoService extends ChangeNotifier {
   final _random = Random();
   int _tickCount = 0;
 
+  StreamSubscription? _telemetrySub;
+  StreamSubscription? _troughsSub;
+  StreamSubscription? _alertsSub;
+
   Map<String, SensorReading> get latestReadings =>
       Map.unmodifiable(_latestReadings);
   Map<String, List<SensorReading>> get readingHistory =>
@@ -63,22 +69,79 @@ class DemoService extends ChangeNotifier {
   Map<String, TroughReading> get troughReadings =>
       Map.unmodifiable(_troughReadings);
 
-  /// Start generating simulated data.
+  /// Start generating simulated data or listening to real Firestore streams.
   void start() {
     if (_isRunning) return;
     _isRunning = true;
-    _generateReadings(); // initial
-    _generateTroughReadings(); // initial trough
-    _timer = Timer.periodic(const Duration(seconds: 5), (_) {
-      _generateReadings();
-      // Troughs update less frequently
-      if (_tickCount % 12 == 0) _generateTroughReadings();
-    });
+
+    _initFirestoreListeners();
+
+    if (AuthService.isDemoMode) {
+      _generateReadings(); // initial
+      _generateTroughReadings(); // initial trough
+      _timer = Timer.periodic(const Duration(seconds: 5), (_) {
+        _generateReadings();
+        // Troughs update less frequently
+        if (_tickCount % 12 == 0) _generateTroughReadings();
+      });
+    }
     notifyListeners();
+  }
+
+  void _initFirestoreListeners() {
+    try {
+      final firestore = FirebaseFirestore.instance;
+
+      // Telemetry (ESP32 Collars)
+      _telemetrySub = firestore.collection('telemetry').snapshots().listen((snapshot) {
+        if (snapshot.docs.isNotEmpty) {
+          for (final doc in snapshot.docs) {
+            final reading = SensorReading.fromFirestore(doc.data(), doc.id);
+            _latestReadings[reading.deviceId] = reading;
+
+            final history = _readingHistory.putIfAbsent(reading.deviceId, () => []);
+            history.add(reading);
+            if (history.length > _maxHistory) history.removeAt(0);
+
+            // Check health status from live collar
+            if (reading.healthStatus != 'healthy') {
+              _activeHealthAlerts[reading.deviceId] = HealthAlert(
+                deviceId: reading.deviceId,
+                animalName: reading.animalName.isNotEmpty ? reading.animalName : reading.deviceId,
+                type: reading.healthStatus,
+                bodyTemp: reading.bodyTemp,
+                movementIntensity: reading.movementIntensity,
+                detectedAt: reading.timestamp,
+              );
+            } else {
+              _activeHealthAlerts.remove(reading.deviceId);
+            }
+          }
+          notifyListeners();
+        }
+      }, onError: (e) => debugPrint('Firestore telemetry error: $e'));
+
+      // Troughs (Water levels)
+      _troughsSub = firestore.collection('troughs').snapshots().listen((snapshot) {
+        if (snapshot.docs.isNotEmpty) {
+          for (final doc in snapshot.docs) {
+            final trough = TroughReading.fromFirestore(doc.data(), doc.id);
+            _troughReadings[trough.troughId] = trough;
+          }
+          notifyListeners();
+        }
+      }, onError: (e) => debugPrint('Firestore troughs error: $e'));
+
+    } catch (e) {
+      debugPrint('Firestore initialization listener error: $e');
+    }
   }
 
   void stop() {
     _timer?.cancel();
+    _telemetrySub?.cancel();
+    _troughsSub?.cancel();
+    _alertsSub?.cancel();
     _isRunning = false;
     notifyListeners();
   }
