@@ -23,6 +23,7 @@ class AuthService {
   static bool get isDemoMode => _isDemo;
   static String? get token => _token;
   static Map<String, dynamic>? get currentUser => _currentUser;
+  static set currentUser(Map<String, dynamic>? user) => _currentUser = user;
   static String? _registeredUserName;
   static String get registeredUserName {
     if (_registeredUserName != null && _registeredUserName!.trim().isNotEmpty) {

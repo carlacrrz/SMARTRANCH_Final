@@ -394,124 +394,194 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   // Step 1 — Datos del Responsable
   Widget _buildStep1() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
-      child: Center(
-        child: Container(
-          constraints: const BoxConstraints(maxWidth: 440),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(child: Icon(Icons.person_pin_rounded, size: 48, color: AppTheme.primary)),
-              const SizedBox(height: 12),
-              Center(
-                child: Text(
-                  'Datos del Responsable',
-                  style: TextStyle(color: AppTheme.textPrimary, fontWeight: FontWeight.w700, fontSize: 18),
-                ),
-              ),
-              const SizedBox(height: 20),
-              TextField(
-                controller: _nameCtrl,
-                style: TextStyle(color: AppTheme.textPrimary, fontSize: 14),
-                decoration: _inputDeco('Nombre completo *', icon: Icons.person_outline),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: _emailCtrl,
-                keyboardType: TextInputType.emailAddress,
-                style: TextStyle(color: AppTheme.textPrimary, fontSize: 14),
-                decoration: _inputDeco('Correo electrónico *', icon: Icons.email_outlined),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: _phoneCtrl,
-                keyboardType: TextInputType.phone,
-                style: TextStyle(color: AppTheme.textPrimary, fontSize: 14),
-                decoration: _inputDeco('Número de celular *', icon: Icons.phone_outlined),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: _passCtrl,
-                obscureText: _obscurePass,
-                style: TextStyle(color: AppTheme.textPrimary, fontSize: 14),
-                decoration: _inputDeco('Contraseña *', icon: Icons.lock_outline).copyWith(
-                  suffixIcon: IconButton(
-                    icon: Icon(_obscurePass ? Icons.visibility_off_outlined : Icons.visibility_outlined,
-                        color: AppTheme.textSecondary, size: 18),
-                    onPressed: () => setState(() => _obscurePass = !_obscurePass),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isWide = constraints.maxWidth >= 650;
+
+        return SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: Center(
+            child: Container(
+              constraints: BoxConstraints(maxWidth: isWide ? 680 : 440),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(child: Icon(Icons.person_pin_rounded, size: 48, color: AppTheme.primary)),
+                  const SizedBox(height: 10),
+                  Center(
+                    child: Text(
+                      'Datos del Responsable',
+                      style: TextStyle(color: AppTheme.textPrimary, fontWeight: FontWeight.w700, fontSize: 18),
+                    ),
                   ),
-                ),
+                  const SizedBox(height: 20),
+                  if (isWide) ...[
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: _nameCtrl,
+                            style: TextStyle(color: AppTheme.textPrimary, fontSize: 14),
+                            decoration: _inputDeco('Nombre completo *', icon: Icons.person_outline),
+                          ),
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: TextField(
+                            controller: _emailCtrl,
+                            keyboardType: TextInputType.emailAddress,
+                            style: TextStyle(color: AppTheme.textPrimary, fontSize: 14),
+                            decoration: _inputDeco('Correo electrónico *', icon: Icons.email_outlined),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+                    TextField(
+                      controller: _phoneCtrl,
+                      keyboardType: TextInputType.phone,
+                      style: TextStyle(color: AppTheme.textPrimary, fontSize: 14),
+                      decoration: _inputDeco('Número de celular *', icon: Icons.phone_outlined),
+                    ),
+                    const SizedBox(height: 14),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: _passCtrl,
+                            obscureText: _obscurePass,
+                            style: TextStyle(color: AppTheme.textPrimary, fontSize: 14),
+                            decoration: _inputDeco('Contraseña *', icon: Icons.lock_outline).copyWith(
+                              suffixIcon: IconButton(
+                                icon: Icon(_obscurePass ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                                    color: AppTheme.textSecondary, size: 18),
+                                onPressed: () => setState(() => _obscurePass = !_obscurePass),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: TextField(
+                            controller: _confirmPassCtrl,
+                            obscureText: true,
+                            style: TextStyle(color: AppTheme.textPrimary, fontSize: 14),
+                            decoration: _inputDeco('Confirmar contraseña *', icon: Icons.lock_outline),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ] else ...[
+                    TextField(
+                      controller: _nameCtrl,
+                      style: TextStyle(color: AppTheme.textPrimary, fontSize: 14),
+                      decoration: _inputDeco('Nombre completo *', icon: Icons.person_outline),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: _emailCtrl,
+                      keyboardType: TextInputType.emailAddress,
+                      style: TextStyle(color: AppTheme.textPrimary, fontSize: 14),
+                      decoration: _inputDeco('Correo electrónico *', icon: Icons.email_outlined),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: _phoneCtrl,
+                      keyboardType: TextInputType.phone,
+                      style: TextStyle(color: AppTheme.textPrimary, fontSize: 14),
+                      decoration: _inputDeco('Número de celular *', icon: Icons.phone_outlined),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: _passCtrl,
+                      obscureText: _obscurePass,
+                      style: TextStyle(color: AppTheme.textPrimary, fontSize: 14),
+                      decoration: _inputDeco('Contraseña *', icon: Icons.lock_outline).copyWith(
+                        suffixIcon: IconButton(
+                          icon: Icon(_obscurePass ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                              color: AppTheme.textSecondary, size: 18),
+                          onPressed: () => setState(() => _obscurePass = !_obscurePass),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: _confirmPassCtrl,
+                      obscureText: true,
+                      style: TextStyle(color: AppTheme.textPrimary, fontSize: 14),
+                      decoration: _inputDeco('Confirmar contraseña *', icon: Icons.lock_outline),
+                    ),
+                  ],
+                ],
               ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: _confirmPassCtrl,
-                obscureText: true,
-                style: TextStyle(color: AppTheme.textPrimary, fontSize: 14),
-                decoration: _inputDeco('Confirmar contraseña *', icon: Icons.lock_outline),
-              ),
-            ],
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
   // Step 2 — Datos del Rancho
   Widget _buildStep2() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
-      child: Center(
-        child: Container(
-          constraints: const BoxConstraints(maxWidth: 440),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(child: Icon(Icons.agriculture_rounded, size: 48, color: AppTheme.primary)),
-              const SizedBox(height: 12),
-              Center(
-                child: Text(
-                  'Datos del Rancho',
-                  style: TextStyle(color: AppTheme.textPrimary, fontWeight: FontWeight.w700, fontSize: 18),
-                ),
-              ),
-              const SizedBox(height: 20),
-              TextField(
-                controller: _ranchNameCtrl,
-                style: TextStyle(color: AppTheme.textPrimary, fontSize: 14),
-                decoration: _inputDeco('Nombre del Rancho *', icon: Icons.home_work_outlined),
-              ),
-              const SizedBox(height: 12),
-              Row(
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isWide = constraints.maxWidth >= 650;
+
+        return SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: Center(
+            child: Container(
+              constraints: BoxConstraints(maxWidth: isWide ? 680 : 440),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _stateCtrl,
-                      style: TextStyle(color: AppTheme.textPrimary, fontSize: 14),
-                      decoration: _inputDeco('Estado', icon: Icons.map_outlined),
+                  Center(child: Icon(Icons.agriculture_rounded, size: 48, color: AppTheme.primary)),
+                  const SizedBox(height: 10),
+                  Center(
+                    child: Text(
+                      'Datos del Rancho',
+                      style: TextStyle(color: AppTheme.textPrimary, fontWeight: FontWeight.w700, fontSize: 18),
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: TextField(
-                      controller: _municipioCtrl,
-                      style: TextStyle(color: AppTheme.textPrimary, fontSize: 14),
-                      decoration: _inputDeco('Municipio'),
-                    ),
+                  const SizedBox(height: 20),
+                  TextField(
+                    controller: _ranchNameCtrl,
+                    style: TextStyle(color: AppTheme.textPrimary, fontSize: 14),
+                    decoration: _inputDeco('Nombre del Rancho *', icon: Icons.home_work_outlined),
+                  ),
+                  const SizedBox(height: 14),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: _stateCtrl,
+                          style: TextStyle(color: AppTheme.textPrimary, fontSize: 14),
+                          decoration: _inputDeco('Estado', icon: Icons.map_outlined),
+                        ),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: TextField(
+                          controller: _municipioCtrl,
+                          style: TextStyle(color: AppTheme.textPrimary, fontSize: 14),
+                          decoration: _inputDeco('Municipio'),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  TextField(
+                    controller: _headCountCtrl,
+                    keyboardType: TextInputType.number,
+                    style: TextStyle(color: AppTheme.textPrimary, fontSize: 14),
+                    decoration: _inputDeco('Número de cabezas (aprox.)', icon: Icons.pets),
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: _headCountCtrl,
-                keyboardType: TextInputType.number,
-                style: TextStyle(color: AppTheme.textPrimary, fontSize: 14),
-                decoration: _inputDeco('Número de cabezas (aprox.)', icon: Icons.pets),
-              ),
-            ],
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 

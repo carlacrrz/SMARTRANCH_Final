@@ -339,29 +339,104 @@ class _MainShellState extends State<MainShell> {
 
         final content = Column(
           children: [
-            // Title Bar (Desktop only, Mobile uses AppBar)
+            // Title Bar (Desktop/Web only, Mobile uses AppBar)
             if (!isMobile)
               Container(
-                height: 48,
+                height: 52,
                 padding: const EdgeInsets.symmetric(horizontal: 24),
-                decoration: const BoxDecoration(
-                  color: AppTheme.primary,
-                  borderRadius: BorderRadius.vertical(bottom: Radius.circular(16)),
+                decoration: BoxDecoration(
+                  color: AppTheme.surface,
+                  border: Border(bottom: BorderSide(color: AppTheme.divider)),
                 ),
                 child: Row(
                   children: [
-                    Icon(
-                      _sections[_selectedIndex].icon,
-                      size: 20,
-                      color: Colors.white,
+                    Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: AppTheme.primary.withAlpha(30),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Icon(
+                        _sections[_selectedIndex].icon,
+                        size: 18,
+                        color: AppTheme.primary,
+                      ),
                     ),
-                    const SizedBox(width: 10),
+                    const SizedBox(width: 12),
                     Text(
                       _sections[_selectedIndex].label,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w700,
-                        color: Colors.white,
+                        color: AppTheme.textPrimary,
+                      ),
+                    ),
+                    const Spacer(),
+
+                    // Live IoT Status Badge
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: AppTheme.primary.withAlpha(20),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: AppTheme.primary.withAlpha(50)),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 7,
+                            height: 7,
+                            decoration: const BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Color(0xFF4CAF50),
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            'IoT Live',
+                            style: TextStyle(
+                              color: AppTheme.primary,
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+
+                    // User Profile Chip
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: AppTheme.card,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: AppTheme.divider),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          CircleAvatar(
+                            radius: 12,
+                            backgroundColor: AppTheme.primary,
+                            child: Text(
+                              AuthService.registeredUserName.isNotEmpty
+                                  ? AuthService.registeredUserName[0].toUpperCase()
+                                  : 'C',
+                              style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            AuthService.registeredUserName,
+                            style: TextStyle(
+                              color: AppTheme.textPrimary,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],

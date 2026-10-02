@@ -69,57 +69,84 @@ class _DashboardHomeScreenState extends State<DashboardHomeScreen> {
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Welcome header (Always visible)
-          _buildHeader(),
-          const SizedBox(height: 12),
+      child: Center(
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 1400),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Welcome header (Always visible)
+              _buildHeader(),
+              const SizedBox(height: 12),
 
-          // KPI strip — 6 cards in a row
-          _buildKpiStrip(stats),
-          const SizedBox(height: 12),
+              // KPI strip — responsive (grid/row on desktop, scroll on mobile)
+              _buildKpiStrip(stats),
+              const SizedBox(height: 14),
 
-          // 2-column desktop layout or 1-column mobile (no system status)
-          LayoutBuilder(
-            builder: (context, constraints) {
-              if (constraints.maxWidth < 800) {
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    _buildHerdDistribution(stats),
-                    const SizedBox(height: 12),
-                    _buildQuickActions(),
-                    const SizedBox(height: 12),
-                    _buildActivitySummary(stats),
-                  ],
-                );
-              }
-              return Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Left — Herd distribution + Quick actions
-                  Expanded(
-                    flex: 4,
-                    child: Column(
+              // Multi-column layout based on viewport width
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  if (constraints.maxWidth >= 1200) {
+                    // 3-Column Desktop / Web layout
+                    return Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _buildHerdDistribution(stats),
-                        const SizedBox(height: 12),
-                        _buildQuickActions(),
+                        Expanded(
+                          flex: 3,
+                          child: _buildHerdDistribution(stats),
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          flex: 3,
+                          child: _buildQuickActions(),
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          flex: 4,
+                          child: _buildActivitySummary(stats),
+                        ),
                       ],
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  // Right — Activity summary
-                  Expanded(
-                    flex: 5,
-                    child: _buildActivitySummary(stats),
-                  ),
-                ],
-              );
-            },
+                    );
+                  } else if (constraints.maxWidth >= 800) {
+                    // 2-Column Tablet / Medium Web layout
+                    return Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          flex: 5,
+                          child: Column(
+                            children: [
+                              _buildHerdDistribution(stats),
+                              const SizedBox(height: 14),
+                              _buildQuickActions(),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          flex: 5,
+                          child: _buildActivitySummary(stats),
+                        ),
+                      ],
+                    );
+                  }
+
+                  // 1-Column Mobile layout
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _buildHerdDistribution(stats),
+                      const SizedBox(height: 12),
+                      _buildQuickActions(),
+                      const SizedBox(height: 12),
+                      _buildActivitySummary(stats),
+                    ],
+                  );
+                },
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -180,35 +207,45 @@ class _DashboardHomeScreenState extends State<DashboardHomeScreen> {
   }
 
   Widget _buildKpiStrip(DashboardStats stats) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        color: AppTheme.card,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppTheme.divider),
-      ),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(
-          children: [
-            _KpiItem(icon: Icons.pets_rounded, label: 'Cabezas',
-                value: '${stats.totalActive}', color: AppTheme.primary,
-                onTap: () => widget.onNavigate?.call(3)),
-            _KpiItem(icon: Icons.notifications_active_rounded, label: 'Alertas',
-                value: '${stats.unacknowledgedAlerts}',
-                color: stats.unacknowledgedAlerts > 0 ? AppTheme.thiDanger : AppTheme.primary,
-                onTap: () => widget.onNavigate?.call(6)),
-            _KpiItem(icon: Icons.vaccines_rounded, label: 'Vacunas 7d',
-                value: '${stats.upcomingMedical7d}', color: AppTheme.thiAlert),
-            _KpiItem(icon: Icons.child_care_rounded, label: 'Partos 30d',
-                value: '${stats.expectedBirths30d}', color: AppTheme.secondary),
-            _KpiItem(icon: Icons.category_rounded, label: 'Categorías',
-                value: '${stats.animalsByCategory.length}', color: const Color(0xFFAB47BC)),
-            _KpiItem(icon: Icons.inventory_2_rounded, label: 'Activos',
-                value: '${stats.totalActive}', color: AppTheme.textSecondary),
-          ],
-        ),
-      ),
+    final kpis = [
+      _KpiItem(icon: Icons.pets_rounded, label: 'Cabezas',
+          value: '${stats.totalActive}', color: AppTheme.primary,
+          onTap: () => widget.onNavigate?.call(3)),
+      _KpiItem(icon: Icons.notifications_active_rounded, label: 'Alertas',
+          value: '${stats.unacknowledgedAlerts}',
+          color: stats.unacknowledgedAlerts > 0 ? AppTheme.thiDanger : AppTheme.primary,
+          onTap: () => widget.onNavigate?.call(6)),
+      _KpiItem(icon: Icons.vaccines_rounded, label: 'Vacunas 7d',
+          value: '${stats.upcomingMedical7d}', color: AppTheme.thiAlert),
+      _KpiItem(icon: Icons.child_care_rounded, label: 'Partos 30d',
+          value: '${stats.expectedBirths30d}', color: AppTheme.secondary),
+      _KpiItem(icon: Icons.category_rounded, label: 'Categorías',
+          value: '${stats.animalsByCategory.length}', color: const Color(0xFFAB47BC)),
+      _KpiItem(icon: Icons.inventory_2_rounded, label: 'Activos',
+          value: '${stats.totalActive}', color: AppTheme.textSecondary),
+    ];
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isDesktop = constraints.maxWidth >= 900;
+
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          decoration: BoxDecoration(
+            color: AppTheme.card,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: AppTheme.divider),
+          ),
+          child: isDesktop
+              ? Row(
+                  children: kpis.map((kpi) => Expanded(child: kpi)).toList(),
+                )
+              : SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(children: kpis),
+                ),
+        );
+      },
     );
   }
 

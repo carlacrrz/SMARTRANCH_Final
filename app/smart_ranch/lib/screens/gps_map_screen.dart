@@ -291,12 +291,44 @@ class _GpsMapScreenState extends State<GpsMapScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        _buildStatsBar(),
-        Expanded(child: _buildMapArea()),
-        _buildPositionList(),
-      ],
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isDesktop = constraints.maxWidth >= 900;
+
+        return Column(
+          children: [
+            _buildStatsBar(),
+            Expanded(
+              child: isDesktop
+                  ? Row(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Expanded(
+                          flex: 7,
+                          child: _buildMapArea(),
+                        ),
+                        Container(
+                          width: 320,
+                          margin: const EdgeInsets.fromLTRB(0, 12, 12, 12),
+                          decoration: BoxDecoration(
+                            color: AppTheme.card,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: AppTheme.divider),
+                          ),
+                          child: _buildVerticalPositionList(),
+                        ),
+                      ],
+                    )
+                  : Column(
+                      children: [
+                        Expanded(child: _buildMapArea()),
+                        _buildPositionList(),
+                      ],
+                    ),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -638,6 +670,145 @@ class _GpsMapScreenState extends State<GpsMapScreen> {
           );
         },
       ),
+    );
+  }
+
+  Widget _buildVerticalPositionList() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            children: [
+              Icon(Icons.sensors_rounded, size: 16, color: AppTheme.primary),
+              const SizedBox(width: 8),
+              const Text(
+                'Collares y Sensores IoT',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+              ),
+              const Spacer(),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: AppTheme.primary.withAlpha(25),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  '${_positions.length} activos',
+                  style: TextStyle(color: AppTheme.primary, fontSize: 10, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
+          ),
+        ),
+        Divider(height: 1, color: AppTheme.divider),
+        Expanded(
+          child: _positions.isEmpty
+              ? Center(
+                  child: Text(
+                    'No hay collares activos',
+                    style: TextStyle(color: AppTheme.textSecondary, fontSize: 12),
+                  ),
+                )
+              : ListView.separated(
+                  padding: const EdgeInsets.all(8),
+                  itemCount: _positions.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 6),
+                  itemBuilder: (context, index) {
+                    final pos = _positions[index];
+                    final isOutOfZone = pos['current_zone'] == null;
+                    final isSelected = pos['device_id'] == _selectedDeviceId;
+                    final speed = (pos['speed'] as num?)?.toDouble() ?? 0.0;
+                    final batV = (pos['battery_v'] as num?)?.toDouble() ?? 4.0;
+                    final batPct = ((batV - 3.2) / (4.2 - 3.2) * 100).clamp(0, 100).toInt();
+
+                    return InkWell(
+                      onTap: () => _focusCow(pos),
+                      borderRadius: BorderRadius.circular(8),
+                      child: Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: isSelected ? AppTheme.primary.withAlpha(25) : AppTheme.surface,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: isSelected
+                                ? AppTheme.primary
+                                : (isOutOfZone ? AppTheme.thiDanger.withAlpha(80) : AppTheme.divider),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: (isOutOfZone ? AppTheme.thiDanger : AppTheme.primary).withAlpha(25),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
+                                Icons.pets_rounded,
+                                size: 16,
+                                color: isOutOfZone ? AppTheme.thiDanger : AppTheme.primary,
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    pos['animal_name'] ?? pos['device_id'],
+                                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    isOutOfZone ? '⚠️ Fuera de cerco' : (pos['current_zone'] ?? 'En rancho'),
+                                    style: TextStyle(
+                                      color: isOutOfZone ? AppTheme.thiDanger : AppTheme.textSecondary,
+                                      fontSize: 10,
+                                      fontWeight: isOutOfZone ? FontWeight.bold : FontWeight.normal,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                Text(
+                                  '${speed.toStringAsFixed(1)} km/h',
+                                  style: TextStyle(color: AppTheme.textSecondary, fontSize: 10),
+                                ),
+                                const SizedBox(height: 2),
+                                Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      batPct < 20 ? Icons.battery_alert_rounded : Icons.battery_full_rounded,
+                                      size: 12,
+                                      color: batPct < 20 ? AppTheme.thiDanger : AppTheme.primary,
+                                    ),
+                                    const SizedBox(width: 2),
+                                    Text(
+                                      '$batPct%',
+                                      style: TextStyle(
+                                        color: batPct < 20 ? AppTheme.thiDanger : AppTheme.textSecondary,
+                                        fontSize: 9,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+        ),
+      ],
     );
   }
 }
