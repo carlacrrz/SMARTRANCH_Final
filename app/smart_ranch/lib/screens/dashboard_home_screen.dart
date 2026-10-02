@@ -129,7 +129,7 @@ class _DashboardHomeScreenState extends State<DashboardHomeScreen> {
     final timeGreeting = hour < 12 ? 'Buenos días' : hour < 18 ? 'Buenas tardes' : 'Buenas noches';
     
     final user = AuthService.currentUser;
-    String name = AuthService.userName;
+    String name = AuthService.registeredUserName;
     if (name.isEmpty || name.toLowerCase() == 'demo') {
       name = 'Carla';
     }

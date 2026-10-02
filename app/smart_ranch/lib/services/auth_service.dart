@@ -23,7 +23,18 @@ class AuthService {
   static bool get isDemoMode => _isDemo;
   static String? get token => _token;
   static Map<String, dynamic>? get currentUser => _currentUser;
-  static set currentUser(Map<String, dynamic>? user) => _currentUser = user;
+  static String? _registeredUserName;
+  static String get registeredUserName {
+    if (_registeredUserName != null && _registeredUserName!.trim().isNotEmpty) {
+      return _registeredUserName!.trim();
+    }
+    return userName;
+  }
+  static set registeredUserName(String name) {
+    if (name.trim().isNotEmpty) {
+      _registeredUserName = name.trim();
+    }
+  }
 
   static final Map<String, String> _registeredNames = {
     'carlacruz1104@gmail.com': 'Carla',
@@ -64,6 +75,7 @@ class AuthService {
       final cleanName = fullName.trim();
       final prefix = cleanEmail.contains('@') ? cleanEmail.split('@').first : cleanEmail;
 
+      _registeredUserName = cleanName;
       _registeredNames[cleanEmail] = cleanName;
       _registeredNames[prefix] = cleanName;
 

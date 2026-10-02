@@ -134,6 +134,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     final ranchName = _ranchNameCtrl.text.trim().isNotEmpty ? _ranchNameCtrl.text.trim() : 'Rancho Puerto Peñasco';
     final email = _emailCtrl.text.trim();
     final fullName = _nameCtrl.text.trim();
+    AuthService.registeredUserName = fullName;
 
     try {
       // Guardar configuración del rancho y geocerca real en Puerto Peñasco
