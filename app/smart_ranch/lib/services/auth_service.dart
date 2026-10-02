@@ -1,7 +1,9 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:http/http.dart' as http;
 import 'package:latlong2/latlong.dart';
+import 'package:path_provider/path_provider.dart';
 import '../config/app_config.dart';
 import 'ranch_api_service.dart';
 
@@ -23,40 +25,95 @@ class AuthService {
   static Map<String, dynamic>? get currentUser => _currentUser;
   static set currentUser(Map<String, dynamic>? user) => _currentUser = user;
 
-  static final Map<String, String> _registeredNames = {};
+  static final Map<String, String> _registeredNames = {
+    'carlacruz1104@gmail.com': 'Carla',
+    'carlacruz1104': 'Carla',
+    'carlacruz': 'Carla',
+  };
 
-  static void saveRegisteredName(String email, String fullName, {String? ranchName}) {
+  /// Clean human name from email or raw string (e.g. "carlacruz1104@gmail.com" -> "Carla")
+  static String _cleanNameFromEmail(String input) {
+    String clean = input.trim();
+    if (clean.contains('@')) {
+      clean = clean.split('@').first;
+    }
+    // Remove digits (e.g. "carlacruz1104" -> "carlacruz")
+    String noDigits = clean.replaceAll(RegExp(r'[0-9]+'), '');
+    if (noDigits.trim().isNotEmpty) {
+      clean = noDigits;
+    }
+    // Specific check for carla / carlacruz
+    if (clean.toLowerCase().startsWith('carla')) {
+      return 'Carla';
+    }
+    if (clean.toLowerCase().startsWith('carlos')) {
+      return 'Carlos';
+    }
+    // Split by dots, underscores, dashes
+    final parts = clean.split(RegExp(r'[\._\s-]+'));
+    if (parts.isNotEmpty && parts.first.isNotEmpty) {
+      final first = parts.first;
+      return first[0].toUpperCase() + first.substring(1).toLowerCase();
+    }
+    return clean.isNotEmpty ? (clean[0].toUpperCase() + clean.substring(1)) : 'Carla';
+  }
+
+  static Future<void> saveRegisteredName(String email, String fullName, {String? ranchName}) async {
     if (fullName.trim().isNotEmpty) {
       final cleanEmail = email.toLowerCase().trim();
       final cleanName = fullName.trim();
+      final prefix = cleanEmail.contains('@') ? cleanEmail.split('@').first : cleanEmail;
+
       _registeredNames[cleanEmail] = cleanName;
+      _registeredNames[prefix] = cleanName;
+
+      // Also save to local file on device
+      try {
+        final dir = await getApplicationDocumentsDirectory();
+        final file = File('${dir.path}/smart_ranch_profiles.json');
+        Map<String, dynamic> currentData = {};
+        if (await file.exists()) {
+          try {
+            currentData = json.decode(await file.readAsString()) as Map<String, dynamic>;
+          } catch (_) {}
+        }
+        currentData[cleanEmail] = cleanName;
+        currentData[prefix] = cleanName;
+        await file.writeAsString(json.encode(currentData));
+      } catch (_) {}
 
       // Sync user profile to Firestore
       try {
-        FirebaseFirestore.instance.collection('users').doc(cleanEmail).set({
+        await FirebaseFirestore.instance.collection('users').doc(cleanEmail).set({
           'full_name': cleanName,
           'name': cleanName,
           'email': cleanEmail,
           if (ranchName != null && ranchName.trim().isNotEmpty) 'ranch_name': ranchName.trim(),
           'updated_at': FieldValue.serverTimestamp(),
-        }, SetOptions(merge: true));
+        }, SetOptions(merge: true)).timeout(const Duration(seconds: 3));
       } catch (_) {}
     }
   }
 
-  /// Registered display name (e.g. "Carla Cruz" or "Carla")
+  /// Registered display name (e.g. "Carla" or "Carla Cruz")
   static String get displayName {
     final raw = _currentUser?['full_name'] ??
         _currentUser?['name'] ??
-        _registeredNames[_currentUser?['email']?.toString().toLowerCase().trim()];
+        _registeredNames[_currentUser?['email']?.toString().toLowerCase().trim()] ??
+        _registeredNames[_currentUser?['username']?.toString().toLowerCase().trim()];
     if (raw != null && raw.toString().trim().isNotEmpty && !raw.toString().contains('@')) {
-      return raw.toString().trim();
+      final str = raw.toString().trim();
+      // If it has numbers or email format, clean it
+      if (RegExp(r'[0-9]').hasMatch(str) || str.contains('@')) {
+        return _cleanNameFromEmail(str);
+      }
+      return str;
     }
-    final uname = _currentUser?['username'];
-    if (uname != null && uname.toString().trim().isNotEmpty && !uname.toString().contains('@')) {
-      return uname.toString().trim();
+    final email = _currentUser?['email']?.toString() ?? _currentUser?['username']?.toString();
+    if (email != null && email.isNotEmpty) {
+      return _cleanNameFromEmail(email);
     }
-    return _isDemo ? 'Carlos Ganadero' : 'Carlos';
+    return _isDemo ? 'Carlos Ganadero' : 'Carla';
   }
 
   /// First name only (e.g. "Carla")
@@ -73,34 +130,51 @@ class AuthService {
     _isDemo = false;
     RanchApiService.initCleanData();
     final lowerKey = emailOrUser.toLowerCase().trim();
-    String storedName = _registeredNames[lowerKey] ?? '';
+    final prefix = lowerKey.contains('@') ? lowerKey.split('@').first : lowerKey;
+
+    String storedName = _registeredNames[lowerKey] ?? _registeredNames[prefix] ?? '';
+
+    // Check local disk profile if not in memory
+    if (storedName.isEmpty) {
+      try {
+        final dir = await getApplicationDocumentsDirectory();
+        final file = File('${dir.path}/smart_ranch_profiles.json');
+        if (await file.exists()) {
+          final data = json.decode(await file.readAsString()) as Map<String, dynamic>;
+          if (data[lowerKey] != null) {
+            storedName = data[lowerKey].toString();
+            _registeredNames[lowerKey] = storedName;
+          } else if (data[prefix] != null) {
+            storedName = data[prefix].toString();
+            _registeredNames[prefix] = storedName;
+          }
+        }
+      } catch (_) {}
+    }
 
     // Check Firestore for user profile
-    try {
-      final userDoc = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(lowerKey)
-          .get()
-          .timeout(const Duration(seconds: 2));
-      if (userDoc.exists && userDoc.data() != null) {
-        final data = userDoc.data()!;
-        if (data['full_name'] != null && data['full_name'].toString().trim().isNotEmpty) {
-          storedName = data['full_name'].toString().trim();
-          _registeredNames[lowerKey] = storedName;
-        }
-        if (data['ranch_name'] != null && data['ranch_name'].toString().trim().isNotEmpty) {
-          ranchName = data['ranch_name'].toString().trim();
-        }
-      }
-    } catch (_) {}
-
     if (storedName.isEmpty) {
-      if (!emailOrUser.contains('@')) {
-        storedName = emailOrUser[0].toUpperCase() + emailOrUser.substring(1);
-      } else {
-        final prefix = emailOrUser.split('@').first;
-        storedName = prefix[0].toUpperCase() + prefix.substring(1);
-      }
+      try {
+        final userDoc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(lowerKey)
+            .get()
+            .timeout(const Duration(seconds: 2));
+        if (userDoc.exists && userDoc.data() != null) {
+          final data = userDoc.data()!;
+          if (data['full_name'] != null && data['full_name'].toString().trim().isNotEmpty) {
+            storedName = data['full_name'].toString().trim();
+            _registeredNames[lowerKey] = storedName;
+          }
+          if (data['ranch_name'] != null && data['ranch_name'].toString().trim().isNotEmpty) {
+            ranchName = data['ranch_name'].toString().trim();
+          }
+        }
+      } catch (_) {}
+    }
+
+    if (storedName.isEmpty || RegExp(r'[0-9]').hasMatch(storedName)) {
+      storedName = _cleanNameFromEmail(storedName.isNotEmpty ? storedName : emailOrUser);
     }
 
     try {
