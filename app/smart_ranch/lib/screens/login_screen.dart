@@ -13,7 +13,7 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStateMixin {
-  final _usernameController = TextEditingController();
+  final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isLoading = false;
   bool _obscurePassword = true;
@@ -31,24 +31,24 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
 
   @override
   void dispose() {
-    _usernameController.dispose();
+    _emailController.dispose();
     _passwordController.dispose();
     _animController.dispose();
     super.dispose();
   }
 
   Future<void> _login() async {
-    final username = _usernameController.text.trim();
+    final email = _emailController.text.trim();
     final password = _passwordController.text;
 
-    if (username.isEmpty || password.isEmpty) {
-      setState(() => _error = 'Ingresa usuario y contraseña');
+    if (email.isEmpty || password.isEmpty) {
+      setState(() => _error = 'Ingresa correo electrónico y contraseña');
       return;
     }
 
     setState(() { _isLoading = true; _error = null; });
 
-    final success = await AuthService.login(username, password);
+    final success = await AuthService.login(email, password);
 
     if (success) {
       widget.onAuthenticated();
@@ -123,14 +123,17 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                   ),
                   const SizedBox(height: 28),
 
-                  // Username
+                  // Email
                   TextField(
-                    controller: _usernameController,
+                    controller: _emailController,
+                    keyboardType: TextInputType.emailAddress,
                     style: TextStyle(color: AppTheme.textPrimary, fontSize: 14),
                     decoration: InputDecoration(
-                      labelText: 'Usuario',
+                      labelText: 'Correo electrónico',
+                      hintText: 'ejemplo@correo.com',
+                      hintStyle: TextStyle(color: AppTheme.textSecondary.withAlpha(100), fontSize: 13),
                       labelStyle: TextStyle(color: AppTheme.textSecondary, fontSize: 13),
-                      prefixIcon: Icon(Icons.person_outline, color: AppTheme.textSecondary, size: 20),
+                      prefixIcon: Icon(Icons.email_outlined, color: AppTheme.textSecondary, size: 20),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(10),
                         borderSide: BorderSide(color: AppTheme.divider),

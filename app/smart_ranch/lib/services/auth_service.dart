@@ -21,27 +21,47 @@ class AuthService {
   static String? get token => _token;
   static Map<String, dynamic>? get currentUser => _currentUser;
   static set currentUser(Map<String, dynamic>? user) => _currentUser = user;
-  static String get userName =>
-      _currentUser?['name'] ??
-      _currentUser?['full_name'] ??
-      _currentUser?['username'] ??
-      'Carlos';
+  static String get userName {
+    final raw = _currentUser?['full_name'] ??
+        _currentUser?['name'] ??
+        _currentUser?['username'];
+    if (raw == null || raw.toString().trim().isEmpty) return 'Carlos';
+    String str = raw.toString().trim();
+    if (str.contains('@')) {
+      str = str.split('@').first;
+    }
+    final parts = str.split(RegExp(r'[\._\s-]+'));
+    if (parts.isNotEmpty && parts.first.isNotEmpty) {
+      final first = parts.first;
+      return first[0].toUpperCase() + first.substring(1);
+    }
+    return str;
+  }
 
-  /// Login with username and password.
-  static Future<bool> login(String username, String password) async {
+  /// Login with email/username and password.
+  static Future<bool> login(String emailOrUser, String password) async {
     _isDemo = false;
     RanchApiService.initCleanData();
+    String displayName = emailOrUser.contains('@') ? emailOrUser.split('@').first : emailOrUser;
+    if (displayName.isNotEmpty) {
+      displayName = displayName[0].toUpperCase() + displayName.substring(1);
+    }
     try {
       final response = await http.post(
         Uri.parse('$_baseUrl/login'),
         headers: {'Content-Type': 'application/json'},
-        body: json.encode({'username': username, 'password': password}),
+        body: json.encode({'email': emailOrUser, 'username': emailOrUser, 'password': password}),
       );
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         _token = data['access_token'];
-        _currentUser = data['user'];
+        _currentUser = data['user'] ?? {
+          'email': emailOrUser,
+          'full_name': displayName,
+          'role': 'admin',
+          'ranch_name': ranchName,
+        };
         return true;
       }
       return false;
@@ -49,8 +69,9 @@ class AuthService {
       // Offline fallback for testing
       _token = 'token_local_${DateTime.now().millisecondsSinceEpoch}';
       _currentUser = {
-        'username': username,
-        'full_name': username,
+        'email': emailOrUser,
+        'username': emailOrUser.split('@').first,
+        'full_name': displayName,
         'role': 'admin',
         'ranch_name': ranchName,
       };

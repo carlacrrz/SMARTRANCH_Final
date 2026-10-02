@@ -24,7 +24,16 @@ class _DashboardHomeScreenState extends State<DashboardHomeScreen> {
     unacknowledgedAlerts: 3,
   );
 
-  DashboardStats _stats = _demoStats;
+  static final _cleanStats = DashboardStats(
+    totalActive: 0,
+    animalsByStatus: {'active': 0},
+    animalsByCategory: {'vaca': 0, 'becerro': 0, 'toro': 0},
+    upcomingMedical7d: 0,
+    expectedBirths30d: 0,
+    unacknowledgedAlerts: 0,
+  );
+
+  DashboardStats _stats = AuthService.isDemoMode ? _demoStats : _cleanStats;
   bool _isLoading = false;
 
   @override
@@ -47,7 +56,7 @@ class _DashboardHomeScreenState extends State<DashboardHomeScreen> {
     } catch (_) {
       if (mounted) {
         setState(() {
-          _stats = _demoStats;
+          _stats = AuthService.isDemoMode ? _demoStats : _cleanStats;
           _isLoading = false;
         });
       }
@@ -120,13 +129,12 @@ class _DashboardHomeScreenState extends State<DashboardHomeScreen> {
     final timeGreeting = hour < 12 ? 'Buenos días' : hour < 18 ? 'Buenas tardes' : 'Buenas noches';
     
     final user = AuthService.currentUser;
-    String rawName = (user?['name'] ?? user?['full_name'] ?? user?['username'] ?? 'Carlos').toString();
-    if (rawName == 'demo' || rawName == 'Modo Demo' || rawName.isEmpty) {
-      rawName = 'Carlos';
+    String firstName = AuthService.userName;
+    if (firstName.isEmpty || firstName.toLowerCase() == 'demo') {
+      firstName = 'Carlos';
     }
-    final firstName = rawName.trim().split(' ').first;
     final greeting = '$timeGreeting, $firstName!';
-    final ranchName = user?['ranch_name']?.toString() ?? 'Rancho Cananea';
+    final ranchName = user?['ranch_name']?.toString() ?? AuthService.ranchName;
     final now = DateTime.now();
     final months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
     final dateStr = '${now.day} ${months[now.month - 1]} ${now.year}';
