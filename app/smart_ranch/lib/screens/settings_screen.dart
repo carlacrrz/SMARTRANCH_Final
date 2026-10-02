@@ -250,31 +250,33 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
                     // Intervalo de Sincronización
                     Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'Frecuencia de Muestreo de Collares',
-                              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
-                            ),
-                            Text(
-                              'Optimiza el consumo de batería de los dispositivos LoRa / BLE',
-                              style: TextStyle(color: AppTheme.textSecondary, fontSize: 11),
-                            ),
-                          ],
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Frecuencia de Muestreo de Collares',
+                                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                              ),
+                              Text(
+                                'Optimiza el consumo de batería de los dispositivos LoRa / BLE',
+                                style: TextStyle(color: AppTheme.textSecondary, fontSize: 11),
+                              ),
+                            ],
+                          ),
                         ),
+                        const SizedBox(width: 8),
                         DropdownButton<int>(
                           value: _syncIntervalMinutes,
                           dropdownColor: AppTheme.card,
                           style: TextStyle(color: AppTheme.textPrimary, fontWeight: FontWeight.w600),
                           underline: const SizedBox(),
                           items: const [
-                            DropdownMenuItem(value: 1, child: Text('Cada 1 minuto')),
-                            DropdownMenuItem(value: 5, child: Text('Cada 5 minutos')),
-                            DropdownMenuItem(value: 15, child: Text('Cada 15 minutos')),
-                            DropdownMenuItem(value: 30, child: Text('Cada 30 minutos')),
+                            DropdownMenuItem(value: 1, child: Text('1 min')),
+                            DropdownMenuItem(value: 5, child: Text('5 min')),
+                            DropdownMenuItem(value: 15, child: Text('15 min')),
+                            DropdownMenuItem(value: 30, child: Text('30 min')),
                           ],
                           onChanged: (v) {
                             if (v != null) setState(() => _syncIntervalMinutes = v);
