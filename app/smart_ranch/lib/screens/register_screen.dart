@@ -149,6 +149,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
         initialDeviceIds: _deviceIds,
       );
 
+      AuthService.saveRegisteredName(email, fullName, ranchName: ranchName);
+
       // Registrar o autenticar usuario
       await AuthService.register(
         username: email.split('@').first,
@@ -161,6 +163,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         'username': email.split('@').first,
         'email': email,
         'full_name': fullName,
+        'name': fullName,
         'ranch_name': ranchName,
         'phone': _phoneCtrl.text.trim(),
         'role': 'admin',
@@ -177,10 +180,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
         widget.onRegistered();
       }
     } catch (_) {
+      AuthService.saveRegisteredName(email, fullName, ranchName: ranchName);
       AuthService.currentUser = {
         'username': email.split('@').first,
         'email': email,
         'full_name': fullName,
+        'name': fullName,
         'ranch_name': ranchName,
         'phone': _phoneCtrl.text.trim(),
         'role': 'admin',

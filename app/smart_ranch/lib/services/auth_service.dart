@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:http/http.dart' as http;
 import 'package:latlong2/latlong.dart';
 import '../config/app_config.dart';
@@ -21,31 +22,87 @@ class AuthService {
   static String? get token => _token;
   static Map<String, dynamic>? get currentUser => _currentUser;
   static set currentUser(Map<String, dynamic>? user) => _currentUser = user;
-  static String get userName {
+
+  static final Map<String, String> _registeredNames = {};
+
+  static void saveRegisteredName(String email, String fullName, {String? ranchName}) {
+    if (fullName.trim().isNotEmpty) {
+      final cleanEmail = email.toLowerCase().trim();
+      final cleanName = fullName.trim();
+      _registeredNames[cleanEmail] = cleanName;
+
+      // Sync user profile to Firestore
+      try {
+        FirebaseFirestore.instance.collection('users').doc(cleanEmail).set({
+          'full_name': cleanName,
+          'name': cleanName,
+          'email': cleanEmail,
+          if (ranchName != null && ranchName.trim().isNotEmpty) 'ranch_name': ranchName.trim(),
+          'updated_at': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
+      } catch (_) {}
+    }
+  }
+
+  /// Registered display name (e.g. "Carla Cruz" or "Carla")
+  static String get displayName {
     final raw = _currentUser?['full_name'] ??
         _currentUser?['name'] ??
-        _currentUser?['username'];
-    if (raw == null || raw.toString().trim().isEmpty) return 'Carlos';
-    String str = raw.toString().trim();
-    if (str.contains('@')) {
-      str = str.split('@').first;
+        _registeredNames[_currentUser?['email']?.toString().toLowerCase().trim()];
+    if (raw != null && raw.toString().trim().isNotEmpty && !raw.toString().contains('@')) {
+      return raw.toString().trim();
     }
-    final parts = str.split(RegExp(r'[\._\s-]+'));
-    if (parts.isNotEmpty && parts.first.isNotEmpty) {
-      final first = parts.first;
-      return first[0].toUpperCase() + first.substring(1);
+    final uname = _currentUser?['username'];
+    if (uname != null && uname.toString().trim().isNotEmpty && !uname.toString().contains('@')) {
+      return uname.toString().trim();
     }
-    return str;
+    return _isDemo ? 'Carlos Ganadero' : 'Carlos';
+  }
+
+  /// First name only (e.g. "Carla")
+  static String get userName {
+    final name = displayName;
+    if (name.contains(' ')) {
+      return name.split(' ').first;
+    }
+    return name;
   }
 
   /// Login with email/username and password.
   static Future<bool> login(String emailOrUser, String password) async {
     _isDemo = false;
     RanchApiService.initCleanData();
-    String displayName = emailOrUser.contains('@') ? emailOrUser.split('@').first : emailOrUser;
-    if (displayName.isNotEmpty) {
-      displayName = displayName[0].toUpperCase() + displayName.substring(1);
+    final lowerKey = emailOrUser.toLowerCase().trim();
+    String storedName = _registeredNames[lowerKey] ?? '';
+
+    // Check Firestore for user profile
+    try {
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(lowerKey)
+          .get()
+          .timeout(const Duration(seconds: 2));
+      if (userDoc.exists && userDoc.data() != null) {
+        final data = userDoc.data()!;
+        if (data['full_name'] != null && data['full_name'].toString().trim().isNotEmpty) {
+          storedName = data['full_name'].toString().trim();
+          _registeredNames[lowerKey] = storedName;
+        }
+        if (data['ranch_name'] != null && data['ranch_name'].toString().trim().isNotEmpty) {
+          ranchName = data['ranch_name'].toString().trim();
+        }
+      }
+    } catch (_) {}
+
+    if (storedName.isEmpty) {
+      if (!emailOrUser.contains('@')) {
+        storedName = emailOrUser[0].toUpperCase() + emailOrUser.substring(1);
+      } else {
+        final prefix = emailOrUser.split('@').first;
+        storedName = prefix[0].toUpperCase() + prefix.substring(1);
+      }
     }
+
     try {
       final response = await http.post(
         Uri.parse('$_baseUrl/login'),
@@ -58,7 +115,8 @@ class AuthService {
         _token = data['access_token'];
         _currentUser = data['user'] ?? {
           'email': emailOrUser,
-          'full_name': displayName,
+          'full_name': storedName,
+          'name': storedName,
           'role': 'admin',
           'ranch_name': ranchName,
         };
@@ -71,7 +129,8 @@ class AuthService {
       _currentUser = {
         'email': emailOrUser,
         'username': emailOrUser.split('@').first,
-        'full_name': displayName,
+        'full_name': storedName,
+        'name': storedName,
         'role': 'admin',
         'ranch_name': ranchName,
       };

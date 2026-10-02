@@ -129,11 +129,11 @@ class _DashboardHomeScreenState extends State<DashboardHomeScreen> {
     final timeGreeting = hour < 12 ? 'Buenos días' : hour < 18 ? 'Buenas tardes' : 'Buenas noches';
     
     final user = AuthService.currentUser;
-    String firstName = AuthService.userName;
-    if (firstName.isEmpty || firstName.toLowerCase() == 'demo') {
-      firstName = 'Carlos';
+    String name = AuthService.displayName;
+    if (name.isEmpty || name.toLowerCase() == 'demo') {
+      name = 'Carlos';
     }
-    final greeting = '$timeGreeting, $firstName!';
+    final greeting = '$timeGreeting, $name!';
     final ranchName = user?['ranch_name']?.toString() ?? AuthService.ranchName;
     final now = DateTime.now();
     final months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
