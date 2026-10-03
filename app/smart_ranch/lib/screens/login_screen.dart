@@ -409,7 +409,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                   AuthService.currentUser!['ranch_name'] = 'Rancho Puerto Peñasco';
                   widget.onAuthenticated();
                 },
-                icon: const Icon(Icons.apple_rounded, size: 20, color: Colors.white),
+                icon: Icon(Icons.apple, size: 20, color: AppTheme.textPrimary),
                 label: const Text('Apple', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: AppTheme.textPrimary,
