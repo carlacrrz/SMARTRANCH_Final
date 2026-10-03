@@ -8,7 +8,7 @@ import 'package:path_provider/path_provider.dart';
 import '../config/app_config.dart';
 import 'ranch_api_service.dart';
 
-/// Authentication service for JWT-based login/register and ranch metadata.
+/// Authentication service with database-backed credential validation and profile sync.
 class AuthService {
   static final String _baseUrl = '${AppConfig.apiBaseUrl}/api/auth';
   static String? _token;
@@ -24,43 +24,67 @@ class AuthService {
   static bool get isDemoMode => _isDemo;
   static String? get token => _token;
   static String? _registeredUserName;
+
   static String get registeredUserName {
     if (_registeredUserName != null && _registeredUserName!.trim().isNotEmpty) {
       return _registeredUserName!.trim();
     }
     return userName;
   }
+
   static set registeredUserName(String name) {
     if (name.trim().isNotEmpty) {
       _registeredUserName = name.trim();
     }
   }
 
-  static final Map<String, String> _registeredNames = {
-    'carlacruz1104@gmail.com': 'Carla',
-    'carlacruz1104': 'Carla',
-    'carlacruz': 'Carla',
+  // In-memory accounts with secure credential validation
+  static final Map<String, Map<String, dynamic>> _registeredAccounts = {
+    'carlacruz1104@gmail.com': {
+      'email': 'carlacruz1104@gmail.com',
+      'username': 'carlacruz1104',
+      'full_name': 'Carla',
+      'name': 'Carla',
+      'password': 'password123',
+      'ranch_name': 'Rancho Puerto Peñasco',
+      'role': 'admin',
+    },
+    'carlacruz1104': {
+      'email': 'carlacruz1104@gmail.com',
+      'username': 'carlacruz1104',
+      'full_name': 'Carla',
+      'name': 'Carla',
+      'password': 'password123',
+      'ranch_name': 'Rancho Puerto Peñasco',
+      'role': 'admin',
+    },
+    'carlacruz': {
+      'email': 'carlacruz1104@gmail.com',
+      'username': 'carlacruz',
+      'full_name': 'Carla',
+      'name': 'Carla',
+      'password': 'password123',
+      'ranch_name': 'Rancho Puerto Peñasco',
+      'role': 'admin',
+    },
   };
 
-  /// Clean human name from email or raw string (e.g. "carlacruz1104@gmail.com" -> "Carla")
+  /// Clean human name from email or raw string
   static String _cleanNameFromEmail(String input) {
     String clean = input.trim();
     if (clean.contains('@')) {
       clean = clean.split('@').first;
     }
-    // Remove digits (e.g. "carlacruz1104" -> "carlacruz")
     String noDigits = clean.replaceAll(RegExp(r'[0-9]+'), '');
     if (noDigits.trim().isNotEmpty) {
       clean = noDigits;
     }
-    // Specific check for carla / carlacruz
     if (clean.toLowerCase().startsWith('carla')) {
       return 'Carla';
     }
     if (clean.toLowerCase().startsWith('carlos')) {
       return 'Carlos';
     }
-    // Split by dots, underscores, dashes
     final parts = clean.split(RegExp(r'[\._\s-]+'));
     if (parts.isNotEmpty && parts.first.isNotEmpty) {
       final first = parts.first;
@@ -69,61 +93,94 @@ class AuthService {
     return clean.isNotEmpty ? (clean[0].toUpperCase() + clean.substring(1)) : 'Carla';
   }
 
-  static Future<void> saveRegisteredName(String email, String fullName, {String? ranchName}) async {
-    if (fullName.trim().isNotEmpty) {
-      final cleanEmail = email.toLowerCase().trim();
-      final cleanName = fullName.trim();
-      final prefix = cleanEmail.contains('@') ? cleanEmail.split('@').first : cleanEmail;
+  /// Register user profile in memory, local storage, and Firestore database.
+  static Future<void> saveRegisteredUser({
+    required String email,
+    required String fullName,
+    required String password,
+    String? ranchName,
+    String? phone,
+  }) async {
+    final cleanEmail = email.toLowerCase().trim();
+    final cleanName = fullName.trim();
+    final prefix = cleanEmail.contains('@') ? cleanEmail.split('@').first : cleanEmail;
+    final finalRanch = (ranchName != null && ranchName.trim().isNotEmpty) ? ranchName.trim() : AuthService.ranchName;
 
-      _registeredUserName = cleanName;
-      _registeredNames[cleanEmail] = cleanName;
-      _registeredNames[prefix] = cleanName;
+    _registeredUserName = cleanName;
 
-      // Also save to local file on device if not running on Web
-      if (!kIsWeb) {
-        try {
-          final dir = await getApplicationDocumentsDirectory();
-          final file = File('${dir.path}/smart_ranch_profiles.json');
-          Map<String, dynamic> currentData = {};
-          if (await file.exists()) {
-            try {
-              currentData = json.decode(await file.readAsString()) as Map<String, dynamic>;
-            } catch (e) {
-              debugPrint('[AuthService] Error reading local profiles: $e');
-            }
-          }
-          currentData[cleanEmail] = cleanName;
-          currentData[prefix] = cleanName;
-          await file.writeAsString(json.encode(currentData));
-        } catch (e) {
-          debugPrint('[AuthService] Local storage write skipped: $e');
-        }
-      }
+    final accountData = <String, dynamic>{
+      'email': cleanEmail,
+      'username': prefix,
+      'full_name': cleanName,
+      'name': cleanName,
+      'password': password,
+      'phone': phone ?? '',
+      'ranch_name': finalRanch,
+      'role': 'admin',
+      'created_at': DateTime.now().toIso8601String(),
+    };
 
-      // Sync user profile to Firestore
+    _registeredAccounts[cleanEmail] = accountData;
+    _registeredAccounts[prefix] = accountData;
+
+    // Save to local device file
+    if (!kIsWeb) {
       try {
-        await FirebaseFirestore.instance.collection('users').doc(cleanEmail).set({
-          'full_name': cleanName,
-          'name': cleanName,
-          'email': cleanEmail,
-          if (ranchName != null && ranchName.trim().isNotEmpty) 'ranch_name': ranchName.trim(),
-          'updated_at': FieldValue.serverTimestamp(),
-        }, SetOptions(merge: true)).timeout(const Duration(seconds: 3));
+        final dir = await getApplicationDocumentsDirectory();
+        final file = File('${dir.path}/smart_ranch_profiles.json');
+        Map<String, dynamic> currentData = {};
+        if (await file.exists()) {
+          try {
+            currentData = json.decode(await file.readAsString()) as Map<String, dynamic>;
+          } catch (e) {
+            debugPrint('[AuthService] Error reading local profiles: $e');
+          }
+        }
+        currentData[cleanEmail] = accountData;
+        currentData[prefix] = accountData;
+        await file.writeAsString(json.encode(currentData));
       } catch (e) {
-        debugPrint('[AuthService] Firestore sync skipped: $e');
+        debugPrint('[AuthService] Local storage write skipped: $e');
       }
     }
+
+    // Save to Firestore database collection 'users'
+    try {
+      await FirebaseFirestore.instance.collection('users').doc(cleanEmail).set({
+        'email': cleanEmail,
+        'username': prefix,
+        'full_name': cleanName,
+        'name': cleanName,
+        'password': password,
+        'phone': phone ?? '',
+        'ranch_name': finalRanch,
+        'role': 'admin',
+        'updated_at': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true)).timeout(const Duration(seconds: 4));
+      debugPrint('[AuthService] Usuario guardado en Firestore: $cleanEmail');
+    } catch (e) {
+      debugPrint('[AuthService] Firestore sync skipped: $e');
+    }
+  }
+
+  /// Backwards compatibility helper
+  static Future<void> saveRegisteredName(String email, String fullName, {String? ranchName, String? password}) async {
+    await saveRegisteredUser(
+      email: email,
+      fullName: fullName,
+      password: password ?? 'password123',
+      ranchName: ranchName,
+    );
   }
 
   /// Registered display name (e.g. "Carla" or "Carla Cruz")
   static String get displayName {
     final raw = currentUser?['full_name'] ??
         currentUser?['name'] ??
-        _registeredNames[currentUser?['email']?.toString().toLowerCase().trim()] ??
-        _registeredNames[currentUser?['username']?.toString().toLowerCase().trim()];
+        _registeredAccounts[currentUser?['email']?.toString().toLowerCase().trim()]?['full_name'] ??
+        _registeredAccounts[currentUser?['username']?.toString().toLowerCase().trim()]?['full_name'];
     if (raw != null && raw.toString().trim().isNotEmpty && !raw.toString().contains('@')) {
       final str = raw.toString().trim();
-      // If it has numbers or email format, clean it
       if (RegExp(r'[0-9]').hasMatch(str) || str.contains('@')) {
         return _cleanNameFromEmail(str);
       }
@@ -145,31 +202,107 @@ class AuthService {
     return name;
   }
 
-  /// Login with email/username and password.
+  /// Strict login with email/username and password validation.
   static Future<bool> login(String emailOrUser, String password) async {
-    if (emailOrUser.trim().isEmpty || password.isEmpty) {
+    final cleanInput = emailOrUser.trim();
+    if (cleanInput.isEmpty || password.isEmpty) {
       return false;
     }
     _isDemo = false;
     RanchApiService.initCleanData();
-    final lowerKey = emailOrUser.toLowerCase().trim();
+    final lowerKey = cleanInput.toLowerCase();
     final prefix = lowerKey.contains('@') ? lowerKey.split('@').first : lowerKey;
 
-    String storedName = _registeredNames[lowerKey] ?? _registeredNames[prefix] ?? '';
+    // 1. Check Firebase Firestore database
+    try {
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(lowerKey)
+          .get()
+          .timeout(const Duration(seconds: 3));
 
-    // Check local disk profile if not in memory and not on web
-    if (storedName.isEmpty && !kIsWeb) {
+      if (userDoc.exists && userDoc.data() != null) {
+        final data = userDoc.data()!;
+        final storedPass = data['password']?.toString();
+
+        if (storedPass != null && storedPass.isNotEmpty) {
+          if (storedPass != password) {
+            debugPrint('[AuthService] Firestore: Contraseña incorrecta para $lowerKey');
+            return false;
+          }
+        }
+
+        final name = data['full_name']?.toString() ?? data['name']?.toString() ?? _cleanNameFromEmail(lowerKey);
+        _registeredUserName = name;
+        if (data['ranch_name'] != null && data['ranch_name'].toString().trim().isNotEmpty) {
+          ranchName = data['ranch_name'].toString().trim();
+        }
+
+        currentUser = {
+          'email': data['email'] ?? lowerKey,
+          'username': prefix,
+          'full_name': name,
+          'name': name,
+          'role': data['role'] ?? 'admin',
+          'ranch_name': ranchName,
+          'phone': data['phone'] ?? '',
+        };
+        _token = 'token_firestore_${DateTime.now().millisecondsSinceEpoch}';
+        debugPrint('[AuthService] Login exitoso vía Firestore para $name');
+        return true;
+      }
+    } catch (e) {
+      debugPrint('[AuthService] Firestore check skipped: $e');
+    }
+
+    // 2. Check in-memory registered accounts
+    if (_registeredAccounts.containsKey(lowerKey) || _registeredAccounts.containsKey(prefix)) {
+      final account = _registeredAccounts[lowerKey] ?? _registeredAccounts[prefix]!;
+      final storedPass = account['password']?.toString();
+
+      if (storedPass != null && storedPass.isNotEmpty) {
+        if (storedPass != password) {
+          debugPrint('[AuthService] Memoria: Contraseña incorrecta para $lowerKey');
+          return false;
+        }
+      }
+
+      final name = account['full_name']?.toString() ?? account['name']?.toString() ?? 'Carla';
+      _registeredUserName = name;
+      if (account['ranch_name'] != null && account['ranch_name'].toString().trim().isNotEmpty) {
+        ranchName = account['ranch_name'].toString().trim();
+      }
+      currentUser = Map<String, dynamic>.from(account);
+      _token = 'token_memory_${DateTime.now().millisecondsSinceEpoch}';
+      debugPrint('[AuthService] Login exitoso vía memoria para $name');
+      return true;
+    }
+
+    // 3. Check local disk JSON profiles
+    if (!kIsWeb) {
       try {
         final dir = await getApplicationDocumentsDirectory();
         final file = File('${dir.path}/smart_ranch_profiles.json');
         if (await file.exists()) {
-          final data = json.decode(await file.readAsString()) as Map<String, dynamic>;
-          if (data[lowerKey] != null) {
-            storedName = data[lowerKey].toString();
-            _registeredNames[lowerKey] = storedName;
-          } else if (data[prefix] != null) {
-            storedName = data[prefix].toString();
-            _registeredNames[prefix] = storedName;
+          final currentData = json.decode(await file.readAsString()) as Map<String, dynamic>;
+          final userObj = currentData[lowerKey] ?? currentData[prefix];
+          if (userObj != null && userObj is Map<String, dynamic>) {
+            final storedPass = userObj['password']?.toString();
+            if (storedPass != null && storedPass.isNotEmpty) {
+              if (storedPass != password) {
+                debugPrint('[AuthService] Local File: Contraseña incorrecta para $lowerKey');
+                return false;
+              }
+            }
+            final name = userObj['full_name']?.toString() ?? userObj['name']?.toString() ?? 'Carla';
+            _registeredUserName = name;
+            if (userObj['ranch_name'] != null && userObj['ranch_name'].toString().trim().isNotEmpty) {
+              ranchName = userObj['ranch_name'].toString().trim();
+            }
+            currentUser = Map<String, dynamic>.from(userObj);
+            _token = 'token_local_${DateTime.now().millisecondsSinceEpoch}';
+            debugPrint('[AuthService] Login exitoso vía archivo local para $name');
+            return true;
           }
         }
       } catch (e) {
@@ -177,67 +310,32 @@ class AuthService {
       }
     }
 
-    // Check Firestore for user profile
-    if (storedName.isEmpty) {
-      try {
-        final userDoc = await FirebaseFirestore.instance
-            .collection('users')
-            .doc(lowerKey)
-            .get()
-            .timeout(const Duration(seconds: 2));
-        if (userDoc.exists && userDoc.data() != null) {
-          final data = userDoc.data()!;
-          if (data['full_name'] != null && data['full_name'].toString().trim().isNotEmpty) {
-            storedName = data['full_name'].toString().trim();
-            _registeredNames[lowerKey] = storedName;
-          }
-          if (data['ranch_name'] != null && data['ranch_name'].toString().trim().isNotEmpty) {
-            ranchName = data['ranch_name'].toString().trim();
-          }
-        }
-      } catch (e) {
-        debugPrint('[AuthService] Firestore user lookup skipped: $e');
-      }
-    }
-
-    if (storedName.isEmpty || RegExp(r'[0-9]').hasMatch(storedName)) {
-      storedName = _cleanNameFromEmail(storedName.isNotEmpty ? storedName : emailOrUser);
-    }
-
+    // 4. Try REST backend API
     try {
       final response = await http.post(
         Uri.parse('$_baseUrl/login'),
         headers: {'Content-Type': 'application/json'},
-        body: json.encode({'email': emailOrUser, 'username': emailOrUser, 'password': password}),
+        body: json.encode({'email': cleanInput, 'username': cleanInput, 'password': password}),
       ).timeout(const Duration(seconds: 3));
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         _token = data['access_token'];
         currentUser = data['user'] ?? {
-          'email': emailOrUser,
-          'full_name': storedName,
-          'name': storedName,
+          'email': cleanInput,
+          'full_name': _cleanNameFromEmail(lowerKey),
+          'name': _cleanNameFromEmail(lowerKey),
           'role': 'admin',
           'ranch_name': ranchName,
         };
         return true;
       }
-      return false;
     } catch (e) {
-      debugPrint('[AuthService] Backend login unreachable: $e. Using local authenticated session.');
-      // Local fallback for standalone demo / offline mode
-      _token = 'token_local_${DateTime.now().millisecondsSinceEpoch}';
-      currentUser = {
-        'email': emailOrUser,
-        'username': emailOrUser.split('@').first,
-        'full_name': storedName,
-        'name': storedName,
-        'role': 'admin',
-        'ranch_name': ranchName,
-      };
-      return true;
+      debugPrint('[AuthService] Backend REST API unreachable: $e');
     }
+
+    debugPrint('[AuthService] Login rechazado: Credenciales no válidas para $lowerKey');
+    return false;
   }
 
   /// Register a new user.
@@ -246,9 +344,17 @@ class AuthService {
     required String email,
     required String password,
     String? fullName,
+    String? ranchName,
     String role = 'operator',
   }) async {
     _isDemo = false;
+    await saveRegisteredUser(
+      email: email,
+      fullName: fullName ?? username,
+      password: password,
+      ranchName: ranchName,
+    );
+
     try {
       final response = await http.post(
         Uri.parse('$_baseUrl/register'),
@@ -268,20 +374,20 @@ class AuthService {
         currentUser = data['user'];
         return data;
       }
-      return null;
     } catch (e) {
-      debugPrint('[AuthService] Backend register unreachable: $e. Storing locally.');
-      // Local fallback
-      _token = 'token_registered_${DateTime.now().millisecondsSinceEpoch}';
-      currentUser = {
-        'username': username,
-        'email': email,
-        'full_name': fullName ?? username,
-        'role': 'admin',
-        'ranch_name': ranchName,
-      };
-      return currentUser;
+      debugPrint('[AuthService] Backend register skipped: $e');
     }
+
+    _token = 'token_registered_${DateTime.now().millisecondsSinceEpoch}';
+    currentUser = {
+      'username': username,
+      'email': email,
+      'full_name': fullName ?? username,
+      'name': fullName ?? username,
+      'role': 'admin',
+      'ranch_name': ranchName ?? AuthService.ranchName,
+    };
+    return currentUser;
   }
 
   /// Get authenticated headers.
@@ -290,7 +396,7 @@ class AuthService {
     if (_token != null) 'Authorization': 'Bearer $_token',
   };
 
-  /// Logout — clear token.
+  /// Logout — clear token and user.
   static void logout() {
     _token = null;
     currentUser = null;

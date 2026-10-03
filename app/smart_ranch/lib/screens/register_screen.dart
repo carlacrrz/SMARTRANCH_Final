@@ -150,7 +150,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
         initialDeviceIds: _deviceIds,
       );
 
-      AuthService.saveRegisteredName(email, fullName, ranchName: ranchName);
+      // Guardar usuario en base de datos Firestore y almacenamiento local
+      await AuthService.saveRegisteredUser(
+        email: email,
+        fullName: fullName,
+        password: _passCtrl.text,
+        ranchName: ranchName,
+        phone: _phoneCtrl.text.trim(),
+      );
 
       // Registrar o autenticar usuario
       await AuthService.register(
@@ -158,6 +165,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         email: email,
         password: _passCtrl.text,
         fullName: fullName,
+        ranchName: ranchName,
       ).timeout(const Duration(seconds: 3), onTimeout: () => null);
 
       AuthService.currentUser = {
@@ -181,7 +189,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
         widget.onRegistered();
       }
     } catch (_) {
-      AuthService.saveRegisteredName(email, fullName, ranchName: ranchName);
+      await AuthService.saveRegisteredUser(
+        email: email,
+        fullName: fullName,
+        password: _passCtrl.text,
+        ranchName: ranchName,
+        phone: _phoneCtrl.text.trim(),
+      );
       AuthService.currentUser = {
         'username': email.split('@').first,
         'email': email,
