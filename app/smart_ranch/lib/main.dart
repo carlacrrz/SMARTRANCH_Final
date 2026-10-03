@@ -273,24 +273,38 @@ class _MainShellState extends State<MainShell> {
           Divider(height: 1, color: AppTheme.divider),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            child: ListTile(
-              dense: true,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-              leading: const Icon(Icons.logout_rounded, color: Color(0xFFFF5252), size: 20),
-              title: isExtended
-                  ? const Text(
-                      'Cerrar Sesión',
-                      style: TextStyle(
-                        color: Color(0xFFFF5252),
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    )
-                  : null,
-              onTap: () {
-                if (isMobile) Navigator.pop(context);
-                widget.onLogout?.call();
-              },
+            child: Tooltip(
+              message: isExtended ? '' : 'Cerrar Sesión',
+              child: InkWell(
+                borderRadius: BorderRadius.circular(8),
+                onTap: () {
+                  if (isMobile) Navigator.pop(context);
+                  widget.onLogout?.call();
+                },
+                child: Container(
+                  height: 40,
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.logout_rounded, color: Color(0xFFFF5252), size: 20),
+                      if (isExtended) ...[
+                        const SizedBox(width: 8),
+                        const Expanded(
+                          child: Text(
+                            'Cerrar Sesión',
+                            style: TextStyle(
+                              color: Color(0xFFFF5252),
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
             ),
           ),
 
