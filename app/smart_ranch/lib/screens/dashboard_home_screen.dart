@@ -34,7 +34,6 @@ class _DashboardHomeScreenState extends State<DashboardHomeScreen> {
   );
 
   DashboardStats _stats = AuthService.isDemoMode ? _demoStats : _cleanStats;
-  bool _isLoading = false;
 
   @override
   void initState() {
@@ -50,14 +49,12 @@ class _DashboardHomeScreenState extends State<DashboardHomeScreen> {
       if (mounted) {
         setState(() {
           _stats = result;
-          _isLoading = false;
         });
       }
     } catch (_) {
       if (mounted) {
         setState(() {
           _stats = AuthService.isDemoMode ? _demoStats : _cleanStats;
-          _isLoading = false;
         });
       }
     }

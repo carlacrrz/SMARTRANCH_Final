@@ -1,12 +1,12 @@
 /// Configuration constants for the Smart Ranch app.
 class AppConfig {
   // MQTT Broker
-  static const String mqttHost = '192.168.1.100'; // Change to your broker IP
-  static const int mqttPortTcp = 1883; // For mobile (TCP)
-  static const int mqttPortWs = 9001; // For web (WebSocket)
+  static String mqttHost = const String.fromEnvironment('MQTT_HOST', defaultValue: '127.0.0.1');
+  static int mqttPortTcp = 1883; // For mobile (TCP)
+  static int mqttPortWs = 9001; // For web (WebSocket)
 
   // REST API
-  static const String apiBaseUrl = 'http://192.168.1.100:8000';
+  static String apiBaseUrl = const String.fromEnvironment('API_BASE_URL', defaultValue: 'http://127.0.0.1:8000');
 
   // MQTT Topics
   static const String telemetryTopicPattern = 'ranch/+/telemetry';
@@ -15,11 +15,11 @@ class AppConfig {
   static String alertTopic(String deviceId) => 'ranch/$deviceId/alert';
   static String commandTopic(String deviceId) => 'ranch/$deviceId/command';
 
-  // THI Thresholds
-  static const double thiNormal = 72.0;
-  static const double thiAlert = 72.0;
-  static const double thiDanger = 79.0;
-  static const double thiEmergency = 89.0;
+  // THI Thresholds (configurable)
+  static double thiNormal = 72.0;
+  static double thiAlert = 72.0;
+  static double thiDanger = 79.0;
+  static double thiEmergency = 89.0;
 
   // Update interval
   static const Duration chartUpdateInterval = Duration(seconds: 10);

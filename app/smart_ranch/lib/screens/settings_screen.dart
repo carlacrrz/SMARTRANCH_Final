@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:latlong2/latlong.dart';
 import '../config/app_theme.dart';
+import '../config/app_config.dart';
 import '../services/auth_service.dart';
 
 /// Screen for general ranch and application settings.
@@ -12,17 +14,17 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   // Ranch Information
-  final _ranchNameCtrl = TextEditingController(text: 'Rancho Cananea');
+  late final TextEditingController _ranchNameCtrl;
   final _stateCtrl = TextEditingController(text: 'Sonora');
-  final _municipalityCtrl = TextEditingController(text: 'Cananea');
-  final _latCtrl = TextEditingController(text: '30.9845');
-  final _lngCtrl = TextEditingController(text: '-110.2974');
+  final _municipalityCtrl = TextEditingController(text: 'Puerto Peñasco');
+  late final TextEditingController _latCtrl;
+  late final TextEditingController _lngCtrl;
   final _headsCountCtrl = TextEditingController(text: '120');
 
   // THI & IoT Sensor Thresholds
-  double _thiAlertThreshold = 75.0;
-  double _thiDangerThreshold = 79.0;
-  double _thiEmergencyThreshold = 84.0;
+  double _thiAlertThreshold = AppConfig.thiAlert;
+  double _thiDangerThreshold = AppConfig.thiDanger;
+  double _thiEmergencyThreshold = AppConfig.thiEmergency;
   int _syncIntervalMinutes = 5;
 
   // Preferences
@@ -31,6 +33,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _pushNotifications = true;
   bool _soundAlerts = true;
   bool _offlineCache = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _ranchNameCtrl = TextEditingController(text: AuthService.ranchName);
+    _latCtrl = TextEditingController(text: AuthService.ranchLocation.latitude.toStringAsFixed(4));
+    _lngCtrl = TextEditingController(text: AuthService.ranchLocation.longitude.toStringAsFixed(4));
+  }
 
   @override
   void dispose() {
@@ -44,6 +54,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   void _saveSettings() {
+    if (_ranchNameCtrl.text.trim().isNotEmpty) {
+      AuthService.ranchName = _ranchNameCtrl.text.trim();
+    }
+    final lat = double.tryParse(_latCtrl.text.trim());
+    final lng = double.tryParse(_lngCtrl.text.trim());
+    if (lat != null && lng != null) {
+      AuthService.ranchLocation = LatLng(lat, lng);
+    }
+    AppConfig.thiAlert = _thiAlertThreshold;
+    AppConfig.thiDanger = _thiDangerThreshold;
+    AppConfig.thiEmergency = _thiEmergencyThreshold;
+
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('✅ Configuración guardada y sincronizada'),
@@ -358,7 +380,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       title: const Text('Notificaciones Push de Alertas Críticas', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
                       subtitle: Text('Recibir avisos de celo, estrés THI y cercos virtuales', style: TextStyle(color: AppTheme.textSecondary, fontSize: 11)),
                       value: _pushNotifications,
-                      activeColor: AppTheme.primary,
+                      activeThumbColor: AppTheme.primary,
                       onChanged: (v) => setState(() => _pushNotifications = v),
                     ),
                     SwitchListTile(
@@ -366,7 +388,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       title: const Text('Alarmas Sonoras en Emergencias', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
                       subtitle: Text('Emitir sonido de alerta cuando un animal salga del potrero', style: TextStyle(color: AppTheme.textSecondary, fontSize: 11)),
                       value: _soundAlerts,
-                      activeColor: AppTheme.primary,
+                      activeThumbColor: AppTheme.primary,
                       onChanged: (v) => setState(() => _soundAlerts = v),
                     ),
                     SwitchListTile(
@@ -374,7 +396,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       title: const Text('Almacenamiento Local Offline', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
                       subtitle: Text('Guardar datos de pesajes y salud sin conexión a internet', style: TextStyle(color: AppTheme.textSecondary, fontSize: 11)),
                       value: _offlineCache,
-                      activeColor: AppTheme.primary,
+                      activeThumbColor: AppTheme.primary,
                       onChanged: (v) => setState(() => _offlineCache = v),
                     ),
                   ],

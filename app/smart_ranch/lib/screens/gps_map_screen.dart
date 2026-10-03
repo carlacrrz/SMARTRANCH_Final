@@ -26,8 +26,7 @@ class _GpsMapScreenState extends State<GpsMapScreen> {
   bool _mqttConnected = false;
   String? _selectedDeviceId;
 
-  static const _puertoPenascoCenter = LatLng(31.3172, -113.5377);
-  LatLng _phoneLocation = const LatLng(31.3175, -113.5372);
+  final LatLng _phoneLocation = const LatLng(31.3175, -113.5372);
 
   static const _demoPositions = [
     {'device_id': 'vaca_001', 'animal_name': 'Lupita', 'latitude': 31.3200, 'longitude': -113.5360, 'current_zone': 'Potrero Peñasco Norte', 'speed': 0.2, 'battery_v': 3.9},
@@ -46,7 +45,6 @@ class _GpsMapScreenState extends State<GpsMapScreen> {
           color: const Color(0xFF619F49).withAlpha(40),
           borderColor: const Color(0xFF619F49),
           borderStrokeWidth: 2.5,
-          isFilled: true,
           label: 'Perímetro Rancho Peñasco',
           labelStyle: const TextStyle(color: Color(0xFF619F49), fontSize: 11, fontWeight: FontWeight.bold),
         ),
@@ -64,7 +62,6 @@ class _GpsMapScreenState extends State<GpsMapScreen> {
         color: const Color(0xFFFF9800).withAlpha(35),
         borderColor: const Color(0xFFFF9800),
         borderStrokeWidth: 2,
-        isFilled: true,
         label: 'Corral Central',
         labelStyle: const TextStyle(color: Color(0xFFFF9800), fontSize: 10, fontWeight: FontWeight.bold),
       ),
@@ -80,7 +77,6 @@ class _GpsMapScreenState extends State<GpsMapScreen> {
         color: const Color(0xFF3AAFA9).withAlpha(45),
         borderColor: const Color(0xFF3AAFA9),
         borderStrokeWidth: 2,
-        isFilled: true,
         label: 'Bebedero Principal',
         labelStyle: const TextStyle(color: Color(0xFF3AAFA9), fontSize: 10, fontWeight: FontWeight.bold),
       ),

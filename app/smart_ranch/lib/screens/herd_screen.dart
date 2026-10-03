@@ -2,7 +2,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../config/app_theme.dart';
-import '../models/ranch_models.dart';
 import '../services/ranch_api_service.dart';
 import '../widgets/crud_dialogs.dart';
 
@@ -102,7 +101,7 @@ class _HerdScreenState extends State<HerdScreen> {
           breed: a.breed ?? 'Brangus',
           sex: a.sex,
           category: a.category,
-          birthDate: a.birthDate != null ? a.birthDate!.toIso8601String().split('T').first : null,
+          birthDate: a.birthDate?.toIso8601String().split('T').first,
           weightKg: latestWeight[a.id] ?? a.weightKg,
           pasture: 'Potrero Principal',
           status: a.status,
@@ -403,6 +402,8 @@ class _HerdScreenState extends State<HerdScreen> {
 
     return Column(
       children: [
+        if (_isLoading)
+          LinearProgressIndicator(color: AppTheme.primary, minHeight: 2),
         // Stats + Search Bar
         Container(
           margin: const EdgeInsets.fromLTRB(20, 12, 20, 0),

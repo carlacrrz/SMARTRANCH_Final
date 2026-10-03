@@ -1,5 +1,6 @@
 import 'dart:convert';
-import 'dart:io';
+import 'dart:io' show File;
+import 'package:flutter/foundation.dart' show kIsWeb, debugPrint;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:http/http.dart' as http;
 import 'package:latlong2/latlong.dart';
@@ -11,7 +12,7 @@ import 'ranch_api_service.dart';
 class AuthService {
   static final String _baseUrl = '${AppConfig.apiBaseUrl}/api/auth';
   static String? _token;
-  static Map<String, dynamic>? _currentUser;
+  static Map<String, dynamic>? currentUser;
   static bool _isDemo = false;
 
   // Default Ranch in Puerto Peñasco, Sonora
@@ -19,11 +20,9 @@ class AuthService {
   static String ranchName = 'Rancho Puerto Peñasco';
   static List<LatLng> geofencePolygon = [];
 
-  static bool get isAuthenticated => _token != null || _currentUser != null;
+  static bool get isAuthenticated => _token != null || currentUser != null;
   static bool get isDemoMode => _isDemo;
   static String? get token => _token;
-  static Map<String, dynamic>? get currentUser => _currentUser;
-  static set currentUser(Map<String, dynamic>? user) => _currentUser = user;
   static String? _registeredUserName;
   static String get registeredUserName {
     if (_registeredUserName != null && _registeredUserName!.trim().isNotEmpty) {
@@ -80,20 +79,26 @@ class AuthService {
       _registeredNames[cleanEmail] = cleanName;
       _registeredNames[prefix] = cleanName;
 
-      // Also save to local file on device
-      try {
-        final dir = await getApplicationDocumentsDirectory();
-        final file = File('${dir.path}/smart_ranch_profiles.json');
-        Map<String, dynamic> currentData = {};
-        if (await file.exists()) {
-          try {
-            currentData = json.decode(await file.readAsString()) as Map<String, dynamic>;
-          } catch (_) {}
+      // Also save to local file on device if not running on Web
+      if (!kIsWeb) {
+        try {
+          final dir = await getApplicationDocumentsDirectory();
+          final file = File('${dir.path}/smart_ranch_profiles.json');
+          Map<String, dynamic> currentData = {};
+          if (await file.exists()) {
+            try {
+              currentData = json.decode(await file.readAsString()) as Map<String, dynamic>;
+            } catch (e) {
+              debugPrint('[AuthService] Error reading local profiles: $e');
+            }
+          }
+          currentData[cleanEmail] = cleanName;
+          currentData[prefix] = cleanName;
+          await file.writeAsString(json.encode(currentData));
+        } catch (e) {
+          debugPrint('[AuthService] Local storage write skipped: $e');
         }
-        currentData[cleanEmail] = cleanName;
-        currentData[prefix] = cleanName;
-        await file.writeAsString(json.encode(currentData));
-      } catch (_) {}
+      }
 
       // Sync user profile to Firestore
       try {
@@ -104,16 +109,18 @@ class AuthService {
           if (ranchName != null && ranchName.trim().isNotEmpty) 'ranch_name': ranchName.trim(),
           'updated_at': FieldValue.serverTimestamp(),
         }, SetOptions(merge: true)).timeout(const Duration(seconds: 3));
-      } catch (_) {}
+      } catch (e) {
+        debugPrint('[AuthService] Firestore sync skipped: $e');
+      }
     }
   }
 
   /// Registered display name (e.g. "Carla" or "Carla Cruz")
   static String get displayName {
-    final raw = _currentUser?['full_name'] ??
-        _currentUser?['name'] ??
-        _registeredNames[_currentUser?['email']?.toString().toLowerCase().trim()] ??
-        _registeredNames[_currentUser?['username']?.toString().toLowerCase().trim()];
+    final raw = currentUser?['full_name'] ??
+        currentUser?['name'] ??
+        _registeredNames[currentUser?['email']?.toString().toLowerCase().trim()] ??
+        _registeredNames[currentUser?['username']?.toString().toLowerCase().trim()];
     if (raw != null && raw.toString().trim().isNotEmpty && !raw.toString().contains('@')) {
       final str = raw.toString().trim();
       // If it has numbers or email format, clean it
@@ -122,7 +129,7 @@ class AuthService {
       }
       return str;
     }
-    final email = _currentUser?['email']?.toString() ?? _currentUser?['username']?.toString();
+    final email = currentUser?['email']?.toString() ?? currentUser?['username']?.toString();
     if (email != null && email.isNotEmpty) {
       return _cleanNameFromEmail(email);
     }
@@ -140,6 +147,9 @@ class AuthService {
 
   /// Login with email/username and password.
   static Future<bool> login(String emailOrUser, String password) async {
+    if (emailOrUser.trim().isEmpty || password.isEmpty) {
+      return false;
+    }
     _isDemo = false;
     RanchApiService.initCleanData();
     final lowerKey = emailOrUser.toLowerCase().trim();
@@ -147,8 +157,8 @@ class AuthService {
 
     String storedName = _registeredNames[lowerKey] ?? _registeredNames[prefix] ?? '';
 
-    // Check local disk profile if not in memory
-    if (storedName.isEmpty) {
+    // Check local disk profile if not in memory and not on web
+    if (storedName.isEmpty && !kIsWeb) {
       try {
         final dir = await getApplicationDocumentsDirectory();
         final file = File('${dir.path}/smart_ranch_profiles.json');
@@ -162,7 +172,9 @@ class AuthService {
             _registeredNames[prefix] = storedName;
           }
         }
-      } catch (_) {}
+      } catch (e) {
+        debugPrint('[AuthService] Local read skipped: $e');
+      }
     }
 
     // Check Firestore for user profile
@@ -183,7 +195,9 @@ class AuthService {
             ranchName = data['ranch_name'].toString().trim();
           }
         }
-      } catch (_) {}
+      } catch (e) {
+        debugPrint('[AuthService] Firestore user lookup skipped: $e');
+      }
     }
 
     if (storedName.isEmpty || RegExp(r'[0-9]').hasMatch(storedName)) {
@@ -195,12 +209,12 @@ class AuthService {
         Uri.parse('$_baseUrl/login'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({'email': emailOrUser, 'username': emailOrUser, 'password': password}),
-      );
+      ).timeout(const Duration(seconds: 3));
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         _token = data['access_token'];
-        _currentUser = data['user'] ?? {
+        currentUser = data['user'] ?? {
           'email': emailOrUser,
           'full_name': storedName,
           'name': storedName,
@@ -210,10 +224,11 @@ class AuthService {
         return true;
       }
       return false;
-    } catch (_) {
-      // Offline fallback for testing
+    } catch (e) {
+      debugPrint('[AuthService] Backend login unreachable: $e. Using local authenticated session.');
+      // Local fallback for standalone demo / offline mode
       _token = 'token_local_${DateTime.now().millisecondsSinceEpoch}';
-      _currentUser = {
+      currentUser = {
         'email': emailOrUser,
         'username': emailOrUser.split('@').first,
         'full_name': storedName,
@@ -245,26 +260,27 @@ class AuthService {
           'full_name': fullName,
           'role': role,
         }),
-      );
+      ).timeout(const Duration(seconds: 3));
 
       if (response.statusCode == 201) {
         final data = json.decode(response.body);
         _token = data['access_token'];
-        _currentUser = data['user'];
+        currentUser = data['user'];
         return data;
       }
       return null;
-    } catch (_) {
+    } catch (e) {
+      debugPrint('[AuthService] Backend register unreachable: $e. Storing locally.');
       // Local fallback
       _token = 'token_registered_${DateTime.now().millisecondsSinceEpoch}';
-      _currentUser = {
+      currentUser = {
         'username': username,
         'email': email,
         'full_name': fullName ?? username,
         'role': 'admin',
         'ranch_name': ranchName,
       };
-      return _currentUser;
+      return currentUser;
     }
   }
 
@@ -277,7 +293,7 @@ class AuthService {
   /// Logout — clear token.
   static void logout() {
     _token = null;
-    _currentUser = null;
+    currentUser = null;
     _isDemo = false;
   }
 
@@ -285,7 +301,7 @@ class AuthService {
   static void enterDemoMode() {
     _isDemo = true;
     _token = null;
-    _currentUser = {
+    currentUser = {
       'username': 'demo',
       'name': 'Carlos',
       'full_name': 'Carlos Ganadero',

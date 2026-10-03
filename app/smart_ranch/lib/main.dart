@@ -1,5 +1,7 @@
-import 'dart:io';
+import 'dart:io' show Platform;
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'config/app_theme.dart';
 import 'screens/dashboard_screen.dart';
 import 'screens/water_dashboard_screen.dart';
@@ -17,19 +19,21 @@ import 'screens/report_screen.dart';
 import 'screens/add_animal_screen.dart';
 import 'screens/system_status_screen.dart';
 import 'screens/settings_screen.dart';
-import 'package:firebase_core/firebase_core.dart';
+import 'config/firebase_options.dart';
 import 'services/auth_service.dart';
 import 'services/demo_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   try {
-    await Firebase.initializeApp();
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
     debugPrint('Firebase conectado exitosamente con smartranch-innova');
   } catch (e) {
     debugPrint('Firebase init: $e');
   }
-  if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
+  if (!kIsWeb && (Platform.isWindows || Platform.isLinux || Platform.isMacOS)) {
     // Desktop window — minimum size handled by framework
   }
   runApp(const SmartRanchApp());

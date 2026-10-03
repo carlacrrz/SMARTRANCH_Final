@@ -165,7 +165,7 @@ class _AddAnimalScreenState extends State<AddAnimalScreen> {
                 children: [
                   Expanded(
                     child: DropdownButtonFormField<String>(
-                      value: _sex,
+                      initialValue: _sex,
                       dropdownColor: AppTheme.card,
                       style: TextStyle(color: AppTheme.textPrimary, fontSize: 14),
                       decoration: _inputDeco('Sexo'),
@@ -179,7 +179,7 @@ class _AddAnimalScreenState extends State<AddAnimalScreen> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: DropdownButtonFormField<String>(
-                      value: _category,
+                      initialValue: _category,
                       dropdownColor: AppTheme.card,
                       style: TextStyle(color: AppTheme.textPrimary, fontSize: 14),
                       decoration: _inputDeco('Categoría'),
@@ -208,7 +208,7 @@ class _AddAnimalScreenState extends State<AddAnimalScreen> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: DropdownButtonFormField<String>(
-                      value: _status,
+                      initialValue: _status,
                       dropdownColor: AppTheme.card,
                       style: TextStyle(color: AppTheme.textPrimary, fontSize: 14),
                       decoration: _inputDeco('Estado'),

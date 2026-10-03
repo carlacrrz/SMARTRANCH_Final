@@ -82,45 +82,33 @@ class DashboardScreen extends StatelessWidget {
                     )
                   : Padding(
                       padding: const EdgeInsets.all(20),
-                      child: LayoutBuilder(
-                        builder: (context, constraints) {
-                          // Responsive columns: 2 for narrow, 3 for medium, 4+ for wide
-                          final crossAxisCount = constraints.maxWidth > 1200
-                              ? 4
-                              : constraints.maxWidth > 800
-                                  ? 3
-                                  : constraints.maxWidth > 600
-                                      ? 2
-                                      : 1;
-                          return GridView.builder(
-                            gridDelegate:
-                                const SliverGridDelegateWithMaxCrossAxisExtent(
-                              maxCrossAxisExtent: 300,
-                              mainAxisSpacing: 12,
-                              crossAxisSpacing: 12,
-                              mainAxisExtent: 375,
-                            ),
-                            itemCount: animals.length,
-                            itemBuilder: (context, index) {
-                              final animal = animals[index];
-                              return AnimalCard(
-                                reading: animal,
-                                hasEstrusAlert: demoService.activeEstrusAlerts
-                                    .containsKey(animal.deviceId),
-                                healthAlertType: demoService
-                                    .activeHealthAlerts[animal.deviceId]
-                                    ?.type,
-                                onTap: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (_) => AnimalDetailScreen(
-                                        deviceId: animal.deviceId,
-                                        demoService: demoService,
-                                      ),
-                                    ),
-                                  );
-                                },
+                      child: GridView.builder(
+                        gridDelegate:
+                            const SliverGridDelegateWithMaxCrossAxisExtent(
+                          maxCrossAxisExtent: 300,
+                          mainAxisSpacing: 12,
+                          crossAxisSpacing: 12,
+                          mainAxisExtent: 375,
+                        ),
+                        itemCount: animals.length,
+                        itemBuilder: (context, index) {
+                          final animal = animals[index];
+                          return AnimalCard(
+                            reading: animal,
+                            hasEstrusAlert: demoService.activeEstrusAlerts
+                                .containsKey(animal.deviceId),
+                            healthAlertType: demoService
+                                .activeHealthAlerts[animal.deviceId]
+                                ?.type,
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => AnimalDetailScreen(
+                                    deviceId: animal.deviceId,
+                                    demoService: demoService,
+                                  ),
+                                ),
                               );
                             },
                           );

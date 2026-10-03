@@ -111,7 +111,7 @@ class _FeedScreenState extends State<FeedScreen> {
                   children: [
                     Expanded(
                       child: DropdownButtonFormField<String>(
-                        value: category,
+                        initialValue: category,
                         dropdownColor: AppTheme.card,
                         decoration: const InputDecoration(labelText: 'Categoría'),
                         items: const [
@@ -127,7 +127,7 @@ class _FeedScreenState extends State<FeedScreen> {
                     const SizedBox(width: 8),
                     Expanded(
                       child: DropdownButtonFormField<String>(
-                        value: unit,
+                        initialValue: unit,
                         dropdownColor: AppTheme.card,
                         decoration: const InputDecoration(labelText: 'Unidad'),
                         items: const [
